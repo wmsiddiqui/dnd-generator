@@ -1,0 +1,2732 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deen &amp; Destiny — Character Creator</title>
+    <style>
+        /* =========================================================
+       THEME
+    ========================================================= */
+        :root {
+            --bg: #070b14;
+            --surface: #0d1525;
+            --surface2: #131e32;
+            --border: #1c2c48;
+            --border2: #263d66;
+            --text: #c8d5e9;
+            --text-dim: #506070;
+            --text-muted: #7a90aa;
+            --accent: #3b82f6;
+            --gold: #f59e0b;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --w-col: #9333ea;
+            --h-col: #16a34a;
+            --t-col: #d97706;
+            --glow-w: rgba(147, 51, 234, 0.35);
+            --glow-h: rgba(22, 163, 74, 0.35);
+            --glow-t: rgba(217, 119, 6, 0.35);
+            --cls-color: var(--accent);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-size: 14px;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        #app {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 12px 16px;
+        }
+
+        /* =========================================================
+       TYPOGRAPHY & LAYOUT UTILITIES
+    ========================================================= */
+        h2 {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        a {
+            color: var(--accent);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 12px 0;
+        }
+
+        .section-title {
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        /* =========================================================
+       BUTTONS
+    ========================================================= */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 20px;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            font-size: .9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .15s;
+            white-space: nowrap;
+        }
+
+        .btn:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .btn-primary:not(:disabled):hover {
+            filter: brightness(1.15);
+        }
+
+        .btn-secondary {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--border2);
+        }
+
+        .btn-secondary:not(:disabled):hover {
+            border-color: var(--accent);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--text-muted);
+            border-color: var(--border2);
+        }
+
+        .btn-outline:not(:disabled):hover {
+            border-color: var(--text-muted);
+            color: var(--text);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+
+        .btn-danger:not(:disabled):hover {
+            filter: brightness(1.15);
+        }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: .8rem;
+        }
+
+        .btn-back {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: .85rem;
+            padding: 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-back:hover {
+            color: var(--text);
+        }
+
+        /* =========================================================
+       FORMS
+    ========================================================= */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-row-double {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .form-hint {
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--text-dim);
+            font-size: .72rem;
+        }
+
+        .level-info-box {
+            background: rgba(59, 130, 246, .07);
+            border: 1px solid rgba(59, 130, 246, .22);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        .level-info-box strong {
+            color: var(--text);
+        }
+
+        .form-label {
+            display: block;
+            font-size: .8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        .form-input,
+        .slot-input,
+        .slot-select {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 5px;
+            color: var(--text);
+            padding: 7px 10px;
+            font-size: .9rem;
+            outline: none;
+        }
+
+        .form-input:focus,
+        .slot-input:focus,
+        .slot-select:focus {
+            border-color: var(--accent);
+        }
+
+        .slot-input.spare {
+            background: var(--surface);
+            font-size: .8rem;
+        }
+
+        .slot-select {
+            cursor: pointer;
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .notes-area {
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 5px;
+            color: var(--text);
+            padding: 8px 10px;
+            font-size: .85rem;
+            resize: vertical;
+            min-height: 90px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .notes-area:focus {
+            border-color: var(--accent);
+        }
+
+        /* =========================================================
+       SITE HEADER
+    ========================================================= */
+        .site-header {
+            text-align: center;
+            padding: 28px 0 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 28px;
+        }
+
+        .site-header.compact {
+            padding: 12px 0;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .site-title {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+        }
+
+        .site-title.small {
+            font-size: 1.1rem;
+        }
+
+        .site-title-d {
+            color: var(--gold);
+        }
+
+        .site-title-amp {
+            color: var(--text-muted);
+            margin: 0 6px;
+        }
+
+        .site-subtitle {
+            font-size: .9rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+        }
+
+        /* =========================================================
+       HOME VIEW
+    ========================================================= */
+        .home-main {
+            min-height: 300px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-icon {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+        }
+
+        .char-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px;
+        }
+
+        .char-card {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-left: 3px solid var(--cls-color);
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        .char-card:hover {
+            box-shadow: 0 0 12px rgba(255, 255, 255, .05);
+            border-color: var(--cls-color);
+        }
+
+        .char-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .char-card-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .char-card-meta {
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .char-card-levels {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .level-badge {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            padding: 2px 7px;
+            font-size: .75rem;
+            font-weight: 700;
+            color: var(--gold);
+        }
+
+        .char-card-stats {
+            display: flex;
+            gap: 12px;
+            font-size: .8rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .char-card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .home-actions {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .io-bar {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .import-notice {
+            font-size: .78rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 6px;
+        }
+
+        /* =========================================================
+       CREATOR WIZARD
+    ========================================================= */
+        .creator-wrap {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .step-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            overflow-x: auto;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: max-content;
+            padding: 0 6px;
+            color: var(--text-dim);
+            position: relative;
+        }
+
+        .step-item:not(:last-child)::after {
+            content: '›';
+            position: absolute;
+            right: -6px;
+            color: var(--border2);
+            font-size: 1.1rem;
+        }
+
+        .step-item.active {
+            color: var(--accent);
+        }
+
+        .step-item.done {
+            color: var(--success);
+        }
+
+        .step-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-item.active .step-dot {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+
+        .step-item.done .step-dot {
+            background: var(--success);
+            border-color: var(--success);
+            color: #fff;
+        }
+
+        .step-label {
+            font-size: .8rem;
+            font-weight: 600;
+        }
+
+        .step-content {
+            max-width: 820px;
+        }
+
+        .step-title {
+            margin-bottom: 6px;
+        }
+
+        .step-desc {
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            font-size: .9rem;
+        }
+
+        .subsection-title {
+            font-size: .85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--text-muted);
+            margin: 20px 0 10px;
+        }
+
+        .step-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* OPTION CARDS (race / subclass) */
+        .option-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .option-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            cursor: pointer;
+            transition: border-color .15s, background .15s;
+        }
+
+        .option-card:hover {
+            border-color: var(--border2);
+        }
+
+        .option-card.selected {
+            border-color: var(--accent);
+            background: rgba(59, 130, 246, .07);
+        }
+
+        .option-card.subclass-card.selected {
+            border-color: var(--cls-color);
+            background: color-mix(in srgb, var(--cls-color) 8%, transparent);
+        }
+
+        .option-icon {
+            font-size: 1.8rem;
+            margin-bottom: 6px;
+        }
+
+        .option-name {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .option-motto {
+            font-style: italic;
+            color: var(--gold);
+            font-size: .82rem;
+            margin-bottom: 6px;
+        }
+
+        .option-desc {
+            font-size: .82rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .option-traits {
+            list-style: none;
+            font-size: .78rem;
+            color: var(--text-muted);
+        }
+
+        .option-traits li::before {
+            content: '• ';
+            color: var(--accent);
+        }
+
+        .option-abilities {
+            margin-top: 8px;
+        }
+
+        .ability-chip {
+            background: rgba(59, 130, 246, .1);
+            border: 1px solid rgba(59, 130, 246, .25);
+            border-radius: 4px;
+            padding: 4px 7px;
+            font-size: .75rem;
+            margin-top: 4px;
+        }
+
+        .special-rule {
+            background: rgba(245, 158, 11, .08);
+            border: 1px solid rgba(245, 158, 11, .25);
+            border-radius: 4px;
+            padding: 5px 8px;
+            font-size: .78rem;
+            color: var(--gold);
+            margin-top: 8px;
+        }
+
+        .ability-list-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .ability-preview-name {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-size: .72rem;
+        }
+
+        .ability-preview-more {
+            color: var(--text-dim);
+            font-size: .72rem;
+            padding: 2px 4px;
+        }
+
+        .super-preview {
+            margin-top: 8px;
+            font-size: .78rem;
+            color: var(--text-muted);
+        }
+
+        /* CLASS CARDS */
+        .class-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+
+        .class-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all .15s;
+            position: relative;
+        }
+
+        .class-card:hover {
+            border-color: var(--cls-color);
+        }
+
+        .class-card.selected {
+            border-color: var(--cls-color);
+            box-shadow: 0 0 0 1px var(--cls-color);
+            background: color-mix(in srgb, var(--cls-color) 5%, var(--surface));
+        }
+
+        .class-name {
+            font-size: 1.2rem;
+            font-weight: 800;
+            margin-bottom: 4px;
+            color: var(--cls-color);
+        }
+
+        .class-tagline {
+            font-style: italic;
+            font-size: .82rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .class-desc {
+            font-size: .82rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .class-traits-title {
+            font-size: .75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .class-traits {
+            list-style: none;
+            font-size: .78rem;
+            margin-bottom: 10px;
+        }
+
+        .class-traits li::before {
+            content: '▸ ';
+            color: var(--cls-color);
+        }
+
+        .class-combat-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .info-chip {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: .75rem;
+        }
+
+        /* ABILITY SELECTION (step 4) */
+        .selection-count {
+            display: inline-block;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            padding: 4px 10px;
+            font-size: .85rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+        }
+
+        .selection-count.done {
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .ability-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .ability-select-card {
+            background: var(--surface);
+            border: 2px solid var(--border);
+            border-radius: 7px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .ability-select-card:hover:not(.disabled) {
+            border-color: var(--border2);
+        }
+
+        .ability-select-card.selected {
+            border-color: var(--accent);
+            background: rgba(59, 130, 246, .07);
+        }
+
+        .ability-select-card.disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .ability-select-header {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 6px;
+        }
+
+        .ability-select-name {
+            font-weight: 700;
+            font-size: .9rem;
+            flex: 1;
+        }
+
+        .check {
+            color: var(--success);
+            font-size: 1rem;
+        }
+
+        .ability-select-desc {
+            font-size: .78rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            white-space: pre-line;
+        }
+
+        .ability-type-badge {
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid;
+        }
+
+        .ability-type-badge.ability {
+            color: var(--accent);
+            border-color: rgba(59, 130, 246, .4);
+            background: rgba(59, 130, 246, .1);
+        }
+
+        .ability-type-badge.passive {
+            color: var(--success);
+            border-color: rgba(34, 197, 94, .4);
+            background: rgba(34, 197, 94, .1);
+        }
+
+        .ability-type-badge.channeling {
+            color: var(--gold);
+            border-color: rgba(245, 158, 11, .4);
+            background: rgba(245, 158, 11, .1);
+        }
+
+        /* STAT ALLOCATION (step 5) */
+        .points-remaining {
+            display: inline-block;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            padding: 5px 12px;
+            font-size: .9rem;
+            margin-bottom: 16px;
+        }
+
+        .points-remaining.done {
+            border-color: var(--success);
+            color: var(--success);
+        }
+
+        .stat-alloc-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-width: 480px;
+        }
+
+        .stat-alloc-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 12px;
+        }
+
+        .stat-alloc-label {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-name {
+            font-weight: 700;
+            font-size: .9rem;
+        }
+
+        .stat-hint,
+        .stat-hint-small {
+            font-size: .72rem;
+            color: var(--text-dim);
+        }
+
+        .stat-alloc-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--border2);
+            background: var(--surface2);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .12s;
+        }
+
+        .stat-btn:not(:disabled):hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .stat-btn:disabled {
+            opacity: .3;
+            cursor: not-allowed;
+        }
+
+        .stat-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            min-width: 28px;
+            text-align: center;
+        }
+
+        /* =========================================================
+       CHARACTER SHEET
+    ========================================================= */
+        .sheet-wrap {
+            --cls-color: var(--accent);
+        }
+
+        .sheet-header {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--cls-color);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin-bottom: 14px;
+        }
+
+        .sheet-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .sheet-actions-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .points-alert {
+            background: rgba(245, 158, 11, .12);
+            border: 1px solid rgba(245, 158, 11, .4);
+            color: var(--gold);
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .sheet-title-line {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .sheet-name {
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+
+        .sheet-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .meta-badge {
+            border-radius: 4px;
+            padding: 3px 9px;
+            font-size: .75rem;
+            font-weight: 700;
+            border: 1px solid var(--border2);
+            background: var(--surface2);
+        }
+
+        .meta-badge.ll {
+            color: var(--gold);
+            border-color: rgba(245, 158, 11, .35);
+            background: rgba(245, 158, 11, .08);
+        }
+
+        .meta-badge.cl {
+            color: var(--text-muted);
+        }
+
+        .sheet-body {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 720px) {
+            .sheet-body {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sheet-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 12px 14px;
+            margin-bottom: 12px;
+        }
+
+        .sheet-section.locked-section {
+            opacity: .55;
+        }
+
+        .section-header {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--cls-color);
+            margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* STATS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .stat-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px 6px;
+            text-align: center;
+        }
+
+        .stat-abbr {
+            font-size: .68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-dim);
+            margin-bottom: 2px;
+        }
+
+        .stat-val {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .stat-max {
+            font-size: .65rem;
+            color: var(--text-dim);
+        }
+
+        /* DERIVED */
+        .derived-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .derived-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .derived-item:last-child {
+            border-bottom: none;
+        }
+
+        .derived-label {
+            font-size: .8rem;
+            color: var(--text-muted);
+        }
+
+        .derived-value {
+            font-size: .9rem;
+            font-weight: 700;
+        }
+
+        .derived-value.hp {
+            color: var(--danger);
+        }
+
+        .derived-value.small {
+            font-size: .75rem;
+            text-align: right;
+            max-width: 60%;
+        }
+
+        /* HP TRACKER */
+        .hp-tracker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .hp-current {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--danger);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .hp-label {
+            font-size: .78rem;
+            color: var(--text-muted);
+        }
+
+        .hp-input {
+            width: 64px;
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 5px;
+            color: var(--text);
+            padding: 4px 7px;
+            font-size: .95rem;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+        }
+
+        .hp-input:focus {
+            border-color: var(--danger);
+        }
+
+        /* COMBAT ACTIONS */
+        .action-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .action-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 6px;
+            border-radius: 4px;
+            background: var(--surface2);
+        }
+
+        .action-label {
+            font-size: .82rem;
+        }
+
+        .action-label.light {
+            color: var(--w-col);
+        }
+
+        .action-label.major {
+            color: var(--t-col);
+        }
+
+        .action-label.bonus {
+            color: var(--gold);
+        }
+
+        .action-label.move {
+            color: var(--h-col);
+        }
+
+        .action-val {
+            font-size: .85rem;
+            font-weight: 700;
+        }
+
+        /* TRAIT LIST */
+        .trait-list {
+            list-style: none;
+            font-size: .82rem;
+            color: var(--text-muted);
+        }
+
+        .trait-list li {
+            padding: 2px 0 2px 12px;
+            position: relative;
+        }
+
+        .trait-list li::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: var(--cls-color);
+        }
+
+        .special-rule-box {
+            background: rgba(245, 158, 11, .06);
+            border: 1px solid rgba(245, 158, 11, .25);
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: .78rem;
+            color: var(--gold);
+            margin-top: 8px;
+        }
+
+        .race-light-abilities {
+            margin-top: 8px;
+        }
+
+        .race-ability {
+            background: rgba(59, 130, 246, .06);
+            border: 1px solid rgba(59, 130, 246, .2);
+            border-radius: 4px;
+            padding: 6px 8px;
+            font-size: .78rem;
+            margin-top: 4px;
+        }
+
+        .race-ability-name {
+            font-weight: 700;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        .race-ability-desc {
+            color: var(--text-muted);
+        }
+
+        /* GEAR SLOTS */
+        .gear-slots {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .gear-slot {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .slot-label {
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-dim);
+        }
+
+        /* ARMOR */
+        .armor-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .armor-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .armor-label {
+            font-size: .78rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            width: 50px;
+            flex-shrink: 0;
+        }
+
+        .armor-row .slot-input {
+            flex: 1;
+        }
+
+        /* GRENADES */
+        .grenade-options {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .grenade-info {
+            font-size: .78rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .grenade-info strong {
+            color: var(--text);
+        }
+
+        .grenade-slots {
+            display: flex;
+            gap: 10px;
+        }
+
+        .grenade-slots .gear-slot {
+            flex: 1;
+        }
+
+        /* MELEE */
+        .melee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .melee-item {
+            font-size: .82rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .melee-item strong {
+            color: var(--text);
+        }
+
+        /* LIGHT ABILITIES */
+        .ability-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ability-card {
+            border-radius: 6px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+        }
+
+        .ability-card.unlocked {
+            background: var(--surface2);
+            border-color: var(--border2);
+        }
+
+        .ability-card.locked {
+            background: var(--surface);
+            opacity: .5;
+            filter: grayscale(.4);
+        }
+
+        .ability-card-header {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+
+        .ability-card-name {
+            font-weight: 700;
+            font-size: .88rem;
+            flex: 1;
+        }
+
+        .ability-status {
+            font-size: .72rem;
+            font-weight: 700;
+        }
+
+        .ability-status:not(.locked) {
+            color: var(--success);
+        }
+
+        .ability-status.locked {
+            color: var(--text-dim);
+        }
+
+        .ability-card-desc {
+            font-size: .78rem;
+            color: var(--text-muted);
+            white-space: pre-line;
+            line-height: 1.5;
+        }
+
+        /* SUPER */
+        .locked-content {
+            color: var(--text-dim);
+            font-size: .85rem;
+            text-align: center;
+            padding: 8px;
+        }
+
+        .super-content {}
+
+        .super-base {
+            font-size: .82rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .super-subclass {
+            font-size: .82rem;
+            background: rgba(245, 158, 11, .06);
+            border: 1px solid rgba(245, 158, 11, .2);
+            border-radius: 4px;
+            padding: 6px 8px;
+            color: var(--gold);
+        }
+
+        /* =========================================================
+       MODAL
+    ========================================================= */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: var(--surface);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            padding: 24px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .levelup-modal h3 {
+            margin-bottom: 14px;
+            font-size: 1.1rem;
+        }
+
+        .levelup-modal p {
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-size: .88rem;
+        }
+
+        .levelup-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .levelup-options .btn {
+            text-align: left;
+            height: auto;
+            padding: 12px 16px;
+            justify-content: flex-start;
+            line-height: 1.4;
+        }
+
+        .levelup-options .btn small {
+            display: block;
+            font-weight: 400;
+            color: rgba(255, 255, 255, .6);
+            margin-top: 2px;
+            font-size: .78rem;
+        }
+
+        .ability-unlock-modal .ability-selection-grid {
+            margin-top: 8px;
+        }
+
+        .modal-stat-grid {
+            max-width: 100%;
+        }
+
+        /* =========================================================
+       MISC
+    ========================================================= */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 12px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app"></div>
+    <div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+
+    <script>
+        /* ==========================================================
+           GAME DATA
+        ========================================================== */
+        const RACES = {
+            human: {
+                id: 'human', name: 'Human', icon: '👤',
+                description: 'Born and bred on Earth. Especially good with fixing machines and can haggle most shop prices down.',
+                traits: ['Machine repair proficiency', 'Can haggle most shop prices down', '"Family discount" with all earthlings'],
+                raceAbilities: []
+            },
+            awoken: {
+                id: 'awoken', name: 'Awoken', icon: '🌌',
+                description: 'Human, but not born on Earth. Rich cultural background spanning centuries. Minor telepathic abilities.',
+                traits: ['Can translate many languages', 'Minor telepathy (frowned upon, not considered magic by the Council)'],
+                raceAbilities: [{ name: 'Telepathy', description: 'Light ability. Move objects 5 lbs or less within 20ft of caster. Limit 1 per caster. Requires concentration.' }]
+            },
+            exo: {
+                id: 'exo', name: 'Exo', icon: '🤖',
+                description: 'A robot with "consciousness." Memory banks on the fritz. Built-in vision modes and environmental resistance.',
+                traits: ['Minor base armor increase', 'Survive uninhabitable locations (including open space) without special equipment', 'Resistant to poisons', 'Night vision & heat vision'],
+                armorBonus: 1,
+                raceAbilities: []
+            },
+            vex: {
+                id: 'vex', name: 'Vex', icon: '💜',
+                description: 'A humanesque purple-hued mathematical construct with a knack for direction and short-range teleportation.',
+                traits: ['No maps needed for major cities', '+10 base speed'],
+                speedBonus: 10,
+                raceAbilities: [{ name: 'Blink', description: 'Light ability. Teleport up to 5ft to a location you have vision of. (Frowned upon by the Council, not considered magic.)' }]
+            }
+        };
+
+        const CLASSES = {
+            warlock: {
+                id: 'warlock', name: 'Warlock', color: '#9333ea',
+                tagline: 'Paracausal specialists. Masters of internal Light.',
+                description: 'Warlocks delve into the depths of the Light paracausal. Honed through deep meditation, they imbue themselves in paracausal powers to perform fantastic feats.',
+                classTraits: ['1 extra Light Action per combat turn', 'Meditate during short rest to gain long rest benefits', 'Can glide when falling'],
+                healthConversion: 3, weaponSlots: 2,
+                grenadeOptions: ['Scattershot', 'Elemental'],
+                meleeOptions: ['Void Melee', 'Leech Melee'],
+                subclasses: ['dark', 'light', 'chaos'],
+                superDescription: 'Cannot hold physical weapons. Taking damage or losing concentration ends the Super. Speed doubles, gain overshield equal to current health, gain 2 additional Light Abilities each turn.',
+                superSubclassBonuses: {
+                    dark: 'Fire left in your wake — creatures passing through burn for 1d4.',
+                    light: 'Bonus action: touch a creature to heal it by 1d4.',
+                    chaos: 'Double your maximum charges, then refill all charges. When invoking Chaos abilities, roll twice and keep the desired outcome.'
+                }
+            },
+            hunter: {
+                id: 'hunter', name: 'Hunter', color: '#16a34a',
+                tagline: 'Weapons experts. Mobility and precision.',
+                description: 'Hunters are weapons specialists who seek the simple pleasures of life, and death. Especially death. They excel at all things nature and survival.',
+                classTraits: ['Reload multiple weapons at once with bonus action', 'Carry up to 3 weapons (instead of 2)', '+10 base speed', 'Falling roll to halve fall damage'],
+                healthConversion: 5, weaponSlots: 3, speedBonus: 10,
+                grenadeOptions: ['Seeker', 'Smoke'],
+                meleeOptions: ['Shadow Strike', 'Throw'],
+                subclasses: ['bladedancer', 'gunslinger', 'nightstalker'],
+                superDescription: 'Requires concentration. Your Stamina is doubled. Any points over 20 may be reallocated to other stats for the duration of this Super.',
+                superSubclassBonuses: {
+                    bladedancer: 'Add 1d4 to all blade damage.',
+                    gunslinger: 'Gain 5 Speed every time you shoot.',
+                    nightstalker: '+5 to Attack rolls on unsuspecting enemies.'
+                }
+            },
+            titan: {
+                id: 'titan', name: 'Titan', color: '#d97706',
+                tagline: 'Brute force paracausal embodiments. Titans are the weapon.',
+                description: 'Titans are not specialists. They are, however, strong. Titans often find weapons to be a hindrance when muscles do the trick just fine.',
+                classTraits: ['Melee as a bonus action', 'Lift heavy objects (up to 200 lbs) without speed impediment', 'Can crash through breakable structures when falling (still takes fall damage)', 'Wield and fire both weapons with one Major Action'],
+                healthConversion: 7, weaponSlots: 2,
+                grenadeOptions: ['Buster', 'Suppressor'],
+                meleeOptions: ['Smash', 'Grapple'],
+                subclasses: ['striker', 'defender', 'breaker'],
+                superDescription: 'Once per charge, leap up to 30ft in any direction with no Speed hindrance. Upon landing on a firm surface, subclass effect triggers.',
+                superSubclassBonuses: {
+                    striker: 'Landing focused to a singular point: 1d12 + 1d4 × LL damage to landing site. Surface cracks.',
+                    defender: 'Surface cracks and Bubbleshield automatically casts.',
+                    breaker: 'Electric shockwave: creatures within 10ft of landing take 1d4 × LL electric damage.'
+                }
+            }
+        };
+
+        const SUBCLASSES = {
+            dark: {
+                id: 'dark', name: 'Dark Warlock', class: 'warlock',
+                motto: '"The Light casts shadows for a reason."',
+                description: 'Dark Warlocks specialize in the absence of Light — gravity, void, entropy, and erasure.',
+                abilities: [
+                    { id: 'void_channeling', name: 'Void Channeling', type: 'channeling', description: 'Pick 1 (pick 2 if LL 3+). Lasts until end of turn:\n• Add element (void/electric/fire) to all Light abilities\n• Perform Void and Leech melees as 1 action\n• Unable to move next turn, gain extra Light Action this turn\n• Alter gravity to make object/creature twice as heavy (≤200 lbs)\n• Create 10ft entropic cloud within 30ft (substances corrode rapidly)' },
+                    { id: 'event_horizon', name: 'Event Horizon', type: 'ability', description: 'Create a 5ft radius gravity well within 15ft. Small creatures: rooted. Normal creatures: pulled, must use half speed to escape. Lasts while concentration held.' },
+                    { id: 'devouring_light', name: 'Devouring Light', type: 'ability', description: 'Create 1 × LL Void orbs. Each fires in a direct line up to 30ft. On impact: 1d4 × LL per orb.' },
+                    { id: 'singularity_form', name: 'Singularity Form', type: 'ability', description: 'Once per long rest. Until your next turn: pass through physical objects, only take damage from non-physical sources. Use your speed in any direction.' },
+                    { id: 'gravitic_reversal', name: 'Gravitic Reversal', type: 'ability', description: 'Target creature/unsecured object within 30ft. Gravity inverts; target lifts 10ft upward. At end of effect, target drops. 1d6 void damage per 10ft fallen (max 3d6).' },
+                    { id: 'entropy_leech', name: 'Entropy Leech', type: 'ability', description: 'Target creature within 30ft gains disadvantage on their next attack roll. You gain advantage on your next attack roll.' },
+                    { id: 'void_collapse', name: 'Void Collapse', type: 'ability', description: 'Choose a dead creature. Void inverts from its paracausal energy, collapses then explodes. Nearby creatures catch fire and take 1d4 × LL damage.' }
+                ]
+            },
+            light: {
+                id: 'light', name: 'Light Warlock', class: 'warlock',
+                motto: '"The purest expression of will."',
+                description: 'Light Warlocks embody clarity, order, and precision. When channeled through song, all abilities vibrate with musical notes.',
+                abilities: [
+                    { id: 'light_channeling', name: 'Light Channeling', type: 'channeling', description: 'Pick 1 (pick 2 if LL 3+). Lasts until end of turn:\n• Gain an extra bonus action\n• Heal up to LL creatures within 15ft by 1d2 × LL\n• Double the radius of all AoE Light Abilities\n• Add 10 to any attack roll (not damage)\n• Take flight with up to 200 lbs; ascend up to 30ft vertically' },
+                    { id: 'radiant_focus', name: 'Radiant Focus', type: 'ability', description: '+5 to all Attack rolls this turn. Requires concentration.' },
+                    { id: 'solar_rift', name: 'Solar Rift', type: 'ability', description: 'Conjure a 10ft diameter circle of light within 15ft. Creatures heal 1d2 per turn passing through. Lasts until your next turn.' },
+                    { id: 'illuminated', name: 'Illuminated', type: 'ability', description: 'Imbue light in a physical object to shine on its own for up to 1 hour. Once per long rest: use on a weapon to double its damage rolls for 1 hour.' },
+                    { id: 'ascendant_state', name: 'Ascendant State', type: 'ability', description: 'Remove 1 revive. Swap places with an ally within 20ft. +5 × LL Speed.' },
+                    { id: 'solar_spears', name: 'Solar Spears', type: 'ability', description: 'Lay LL solar spears extending 5 × LL ft in a line from your location. Creatures within 5ft of a spear take 1d4 × LL. The attacking spear dissipates after the attack.' },
+                    { id: 'wormhole', name: 'Wormhole', type: 'ability', description: 'Costs 2 Light Actions. Conjure 2 rifts (10ft diameter), each within 50ft of your location. Choose a cost:\n• Remove revive → creatures touching rifts swap places\n• Remove Major Action → creatures take 1d2 × LL damage\n• Remove Bonus Action → creatures heal for LL health' }
+                ]
+            },
+            chaos: {
+                id: 'chaos', name: 'Chaos Warlock', class: 'warlock',
+                motto: '"Reality is optional."',
+                description: 'Chaos Warlocks embrace instability. Their Light mutates, glitches, and explodes unpredictably.',
+                specialRule: 'Uses Charges (2 × LL; reset on long rest). Each ability costs 2 charges. Grenades cost 1 charge. Melees are free but count as Light Abilities.',
+                abilities: [
+                    { id: 'chaos_channeling', name: 'Chaos Channeling', type: 'channeling', description: 'Costs 1 charge. Pick 1 (pick 2 if LL 3+). Lasts until end of turn:\n• Swap grenades to any grenade class\n• Swap positions with any allied character within 30ft\n• Increase your LL by 1\n• Gain 1 charge per LL\n• Deal max damage for any Light Ability' },
+                    { id: 'volatile_casting', name: 'Volatile Casting', type: 'ability', description: 'Your weapon and Light Abilities may chain (1–2), rebound (3–4), or alter terrain (5–6). Roll a d6 with each applicable attack/ability. Consult DM for results.' },
+                    { id: 'paradox', name: 'Paradox', type: 'ability', description: 'Roll a d20. Something will happen. Consult the DM, or don\'t. It may not matter, or it may be too late.' },
+                    { id: 'unstable_form', name: 'Unstable Form', type: 'ability', description: 'Roll a d6. Gain 10 Speed. Then:\n(1–2) Strength +3\n(3–4) +1d4 on all damage\n(5–6) Take LL damage' },
+                    { id: 'reality_break', name: 'Reality Break', type: 'ability', description: 'Once per long rest. Target any creatures within 50ft. Each target: 1d6 × LL chaos beam. Per target roll d2: (1) attack turns back toward you / (2) attack hits target.' },
+                    { id: 'sun_and_moon', name: 'Sun And Moon', type: 'ability', description: 'Gain 10 Speed. Until your next turn, choose one:\n• Double gravity in an area 10ft diameter within 30ft\n• Half gravity in an area 10ft diameter within 30ft' },
+                    { id: 'vortex', name: 'Vortex', type: 'ability', description: 'Summon a 10×10×20ft vortex. Creatures inside take 1d4 × LL. Pulls objects toward it with strong wind force. Lasts until your next turn.' }
+                ]
+            },
+            bladedancer: {
+                id: 'bladedancer', name: 'Bladedancer', class: 'hunter',
+                motto: '"Up close is where it gets beautiful."',
+                description: 'Bladedancers turn motion into lethality.',
+                abilities: [
+                    { id: 'attune', name: 'Attune', type: 'passive', description: 'Outside combat, during a long rest. Choose 1 equippable weapon — reforges to a blade of your choice (same damage/properties). Only you can wield it. Summonable within 300,000 miles. Blades (like melee) have advantage on attack rolls.' },
+                    { id: 'feint', name: 'Feint', type: 'passive', description: '(Passive) Any attack within 5ft allows you to appear behind the enemy before or after the attack.' },
+                    { id: 'hone', name: 'Hone', type: 'passive', description: '(Passive) All melees and melee weapons gain +1d6 damage.' },
+                    { id: 'blademaster', name: 'Blademaster', type: 'passive', description: '(Passive) All melees and melee weapons gain +1d3 × LL damage.' },
+                    { id: 'spear', name: 'Spear', type: 'ability', description: 'Requires concentration. Throw blade to impale a target within 30ft. Damage = blade\'s regular damage (does not gain advantage on attack rolls).' },
+                    { id: 'windblade', name: 'Windblade', type: 'ability', description: 'Create a 90-degree arc of damage 15ft in front of you. 1d2 × LL to each target.' },
+                    { id: 'last_stand', name: 'Last Stand', type: 'ability', description: 'Minus 1 revive. Imbue Light into attuned weapon (1 attack before breaking). +1d6 × LL damage and +10 to attack roll.' }
+                ]
+            },
+            gunslinger: {
+                id: 'gunslinger', name: 'Gunslinger', class: 'hunter',
+                motto: '"One shot is all I need."',
+                description: 'Gunslingers master firearms to superhuman levels.',
+                abilities: [
+                    { id: 'imbue', name: 'Imbue', type: 'ability', description: 'Imbue Light directly into your weapons. Use Light Actions as Major Actions for the rest of this combat.' },
+                    { id: 'straffe', name: 'Straffe', type: 'ability', description: 'If Stamina above 6, jump off nearby objects or creatures this turn. Gain advantage on attack rolls and dodging.' },
+                    { id: 'lock_and_load', name: 'Lock and Load', type: 'ability', description: 'Reload all weapons within 5ft of your person. Gain 10 speed this turn.' },
+                    { id: 'snipe_gs', name: 'Snipe', type: 'ability', description: 'When handling weapons of range 60 or greater, pick one for this turn (pick 2 if LL 3+):\n• +5 to the atk roll\n• Double the effective range\n• Pierce through thick barriers (+1d10 damage upon hit)' },
+                    { id: 'boom', name: 'Boom', type: 'ability', description: 'When handling explosive weapons, choose one for this turn (choose 2 if LL 3+):\n• It shoots twice in a row\n• Double the blast radius\n• Give ammunition the same tracking properties as the Seeker grenade' },
+                    { id: 'scope', name: 'Scope', type: 'ability', description: 'For any weapon with ammunition, choose before attacking:\n• Subtract atk roll points → increase range by 5ft per point\n• Subtract 5ft of range → increase atk roll per 5ft (decrease damage by 2 per increment)' },
+                    { id: 'reassemble', name: 'Reassemble', type: 'ability', description: 'Break multiple weapons and reassemble their components over a long rest. Consult DM on the outcome.' }
+                ]
+            },
+            nightstalker: {
+                id: 'nightstalker', name: 'Nightstalker', class: 'hunter',
+                motto: '"You never saw me."',
+                description: 'Nightstalkers weaponize darkness and fear.',
+                abilities: [
+                    { id: 'light_eyes', name: 'Light-eyes', type: 'passive', description: '(Passive) Gain night, thermal, and paracausal vision.' },
+                    { id: 'shadowstalk', name: 'Shadowstalk', type: 'ability', description: 'Barrier of Light suppresses noise within 5ft. If unmoving in shadow, light passes around you and you become invisible. Lasts until your next turn.' },
+                    { id: 'backstab', name: 'Backstab', type: 'ability', description: 'If attacking an unsuspecting target, double attack and damage rolls this turn.' },
+                    { id: 'peek_a_boom', name: 'Peek-A-Boom', type: 'ability', description: 'Lay down your weapon tethered to Light within 30ft (does not count as equipped). Use a Light Action to fire it. Binding costs 1 Light Action. Connection lost beyond 30ft. Reloading is normal.' },
+                    { id: 'straffe_ns', name: 'Straffe', type: 'ability', description: 'If Stamina above 6, jump off nearby objects or creatures this turn. Gain advantage on attack rolls and dodging.' },
+                    { id: 'snipe_ns', name: 'Snipe', type: 'ability', description: 'When handling weapons of range 60 or greater, pick one (pick 2 if LL 3+):\n• +5 to the atk roll\n• Double the effective range\n• Pierce through thick barriers (+1d10 damage upon hit)' },
+                    { id: 'way_of_ninja', name: 'Way of the Ninja', type: 'ability', description: 'Once per long rest. Vanish into a micro-singularity and reappear adjacent to a creature within 120ft. If the creature dies this turn, teleport again up to 60ft without provoking opportunity attacks.' }
+                ]
+            },
+            striker: {
+                id: 'striker', name: 'Striker', class: 'titan',
+                motto: '"Hit first. Hit harder."',
+                description: 'Strikers are living battering rams.',
+                abilities: [
+                    { id: 'boost', name: 'Boost', type: 'ability', description: 'Add 5 to any character stat for this turn. Also increase your speed by 10.' },
+                    { id: 'fists_of_fury', name: 'Fists of Fury', type: 'ability', description: 'Melee twice with this Light Action. If you melee different targets: +10 speed. Same target twice: reposition within 5ft. If a target dies: gain another Light Action. +1d2 melee damage for each consecutive turn you use Fists of Fury this combat.' },
+                    { id: 'grenade_strike', name: 'Grenade Strike', type: 'ability', description: 'Punch your Buster grenade and send it flying within 20ft. Plants onto the first location it hits.' },
+                    { id: 'battering_ram', name: 'Battering Ram', type: 'ability', description: '+10 speed. Channel light into a single point on your shoulder; ram through obstacles. Creatures rammed: disrupted. Objects weaker than 2in steel: destroyed. 2d6 to any creature rammed.' },
+                    { id: 'overshield_str', name: 'Overshield', type: 'ability', description: 'Once per short rest: gain a shield equal to half your current health (rounded down). All damage affects the shield first. Generating requires concentration (not maintaining it).' },
+                    { id: 'nuclear_light', name: 'Nuclear Light', type: 'ability', description: 'All melees have double damage. You also take double damage until your next turn.' },
+                    { id: 'martial_artist', name: 'Martial Artist', type: 'ability', description: 'Exchange grenade charges for extra melees. Exchange a Major Action for 2 melees this turn. Increase your speed by 10.' }
+                ]
+            },
+            defender: {
+                id: 'defender', name: 'Defender', class: 'titan',
+                motto: '"Nothing gets past me."',
+                description: 'Defenders are shield incarnate.',
+                abilities: [
+                    { id: 'construct', name: 'Construct', type: 'ability', description: 'Create 4 (5×5×5ft) Light-energy structures. Each within 5ft of the caster or touching a full side of another piece. Equivalent to 1-inch thick steel. Each structure: hollow box with 20 HP.' },
+                    { id: 'shield_bash', name: 'Shield Bash', type: 'ability', description: 'Rip off moveable/breakable terrain within 5ft. Imbue it with Light, bash an enemy. 1d4 × LL.' },
+                    { id: 'heart_of_forge', name: 'Heart of the Forge', type: 'ability', description: 'During a long rest, reforge a weapon into a piece of armor. Armor rating relative to weapon rarity. You are attuned to the piece. Summonable within 300,000 miles.' },
+                    { id: 'juggernaut', name: 'Juggernaut', type: 'ability', description: 'Requires full armor set. Imbue Light into armor. Choose one (choose 2 if LL 3+):\n• Increase melee damage by total armor rating\n• Increase Strength by 5\n• You can lift up to 1,000 lbs with no hindrance' },
+                    { id: 'taunt', name: 'Taunt', type: 'ability', description: 'Half your speed. Taunt enemies to focus their attacks on you until your next turn. Effective for most enemies within 20ft.' },
+                    { id: 'bubbleshield', name: 'Bubbleshield', type: 'ability', description: 'Requires full speed. Cannot move until your next turn. Expand your light to a 20ft sphere with your current armor rating against all projectiles.' },
+                    { id: 'guardian_ally', name: 'Guardian Ally', type: 'ability', description: 'Choose an allied guardian. Throw them a distance up to half your max speed. If unwilling, they must perform a strength check against yours.' }
+                ]
+            },
+            breaker: {
+                id: 'breaker', name: 'Breaker', class: 'titan',
+                motto: '"Everything breaks eventually."',
+                description: 'Known not for breaking objects, but for breaking reality.',
+                specialRule: 'Gain 6 character stat points per level instead of 3.',
+                abilities: [
+                    { id: 'speed_boost', name: 'Speed Boost', type: 'passive', description: '(Passive) +20 speed.' },
+                    { id: 'damage_boost', name: 'Damage Boost', type: 'passive', description: '(Passive) +2 to all damage rolls. Deal 50% bonus damage to structures, shields, and constructs.' },
+                    { id: 'accuracy_boost', name: 'Accuracy Boost', type: 'passive', description: '(Passive) +3 to all attack rolls. Attacks permanently weaken enemy armor by 1 × LL (does not stack).' },
+                    { id: 'more_power', name: 'More Power', type: 'passive', description: '(Passive) Gain an extra Major Action.' },
+                    { id: 'third_arm', name: 'Third Arm', type: 'passive', description: '(Passive) Carry 3 grenades instead of 2.' },
+                    { id: 'harden', name: 'Harden', type: 'passive', description: '(Passive) Your armor increases by a base 3.' },
+                    { id: 'cataclysm', name: 'Cataclysm', type: 'ability', description: 'Once per long rest. Target the terrain and everything in a 30ft cone. Reality bends — a void is left behind. 1d20 × LL. You drop all physical weapons, are rooted and prone next turn, and your equipped armor is destroyed.' }
+                ]
+            }
+        };
+
+        const GRENADE_DESCS = {
+            'Scattershot': 'After being thrown at least 30ft, splits into 3. Choose up to 3 locations within 60ft for the explosions. Each explosion: 1d4 × LL.',
+            'Elemental': 'Choose void, electric, or fire. Deals that type of damage for 1d4 × LL.',
+            'Seeker': 'Targets a creature within 60ft; follows paracausal energy trail until collision (60ft/turn). 1d6 × LL. Marks target with bright orange chem-trail on explosion.',
+            'Smoke': 'No damage. Creates a smokescreen sphere 20ft in diameter.',
+            'Buster': 'Cannot be thrown — must be planted. Destroys surface of a structure up to 2 inches thick. 1d8 + 1d4 × LL damage.',
+            'Suppressor': 'No damage. Thrown up to 30ft, expands to 10ft wide with tendrils of light (like a bola). First creature hit is ensnared (Wisdom save to escape).'
+        };
+
+        const MELEE_DESCS = {
+            'Void Melee': '1d2 × LL. If LL 2 or higher, a brief void portal appears and shields from projectile damage.',
+            'Leech Melee': '1d2 × LL. For every 3 melee damage dealt, heal 1.',
+            'Shadow Strike': '1d3 × LL. Regardless of speed remaining, you may position on or around a creature before this melee.',
+            'Throw': 'If a non-large creature is within 5ft, you may throw it in any direction up to 5ft around your current location.',
+            'Smash': '1d4 × LL.',
+            'Grapple': '1d2 × LL. Roll strength check to root an enemy with your own hands. May attempt to have 1 free hand for other actions if rolling at disadvantage.'
+        };
+
+        /* ==========================================================
+           APP STATE
+        ========================================================== */
+        const STATE = {
+            view: 'home',
+            chars: [],
+            activeId: null,
+            step: 1,
+            draft: null,
+            pendingLevelUp: null,
+            modalLocked: false
+        };
+
+        /* ==========================================================
+           UTILS
+        ========================================================== */
+        function save() { localStorage.setItem('dd_chars', JSON.stringify(STATE.chars)); }
+        function load() {
+            try { const d = localStorage.getItem('dd_chars'); if (d) STATE.chars = JSON.parse(d); } catch (e) { }
+        }
+
+        function derived(ch) {
+            const cls = CLASSES[ch.class];
+            const race = RACES[ch.race];
+            const sub = SUBCLASSES[ch.subclass];
+
+            const hp = ch.stats.health * cls.healthConversion;
+
+            let baseSpd = 25;
+            if (race.speedBonus) baseSpd += race.speedBonus;
+            if (cls.speedBonus) baseSpd += cls.speedBonus;
+            if (sub.id === 'breaker') baseSpd += 20;
+            const totalSpd = baseSpd + Math.floor(ch.stats.speed / 2) * 5;
+
+            const atkBonus = Math.floor(ch.stats.agility / 2);
+            const wepDmgBonus = Math.floor(ch.stats.strength / 3);
+            const ltDmgBonus = Math.floor(ch.stats.wisdom / 3);
+
+            let staminaTier = 'Base';
+            if (ch.stats.stamina >= 20) staminaTier = 'Tier 3 — 2 turns back-to-back';
+            else if (ch.stats.stamina >= 16) staminaTier = 'Tier 2 — extra Major/Light action';
+            else if (ch.stats.stamina >= 8) staminaTier = 'Tier 1 — extra Bonus action';
+
+            const chaosCharges = sub.id === 'chaos' ? 2 * ch.lightLevel : null;
+
+            const lightActions = ch.class === 'warlock' ? 2 : 1;
+            const majorActions = sub.id === 'breaker' ? 2 : 1;
+
+            return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, staminaTier, chaosCharges, lightActions, majorActions };
+        }
+
+        function ptsPerLevel(ch) { return ch.subclass === 'breaker' ? 6 : 3; }
+
+        const STAT_META = {
+            strength: { label: 'Strength', max: 21, hint: 'Every 3 pts = +1 weapon damage' },
+            agility: { label: 'Agility', max: 20, hint: 'Every 2 pts = +1 to attack rolls' },
+            wisdom: { label: 'Wisdom', max: 21, hint: 'Every 3 pts = +1 Light ability damage' },
+            health: { label: 'Health', max: 20, hint: 'Each pt × multiplier = max HP' },
+            speed: { label: 'Speed', max: 20, hint: 'Every 2 pts = +5ft movement' },
+            stamina: { label: 'Stamina', max: 20, hint: '8/16/20 pts unlock action tiers' }
+        };
+
+        /* ==========================================================
+           MAIN RENDER
+        ========================================================== */
+        const $app = document.getElementById('app');
+        function render() {
+            if (STATE.view === 'home') renderHome();
+            else if (STATE.view === 'creator') renderCreator();
+            else if (STATE.view === 'sheet') renderSheet();
+        }
+
+        /* ==========================================================
+           HOME
+        ========================================================== */
+        function renderHome() {
+            const chars = STATE.chars;
+            $app.innerHTML = `
+    <header class="site-header">
+      <div class="site-title">
+        <span class="site-title-d">DEEN</span>
+        <span class="site-title-amp">&amp;</span>
+        <span class="site-title-d">DESTINY</span>
+      </div>
+      <div class="site-subtitle">Character Creator</div>
+    </header>
+    <div class="home-main">
+      ${chars.length === 0 ? `
+        <div class="empty-state">
+          <div class="empty-icon">⚡</div>
+          <p>No Guardians found.<br>Create your first character to begin.</p>
+        </div>
+      ` : `
+        <div class="section-title">Saved Guardians</div>
+        <div class="char-grid">
+          ${chars.map(charCard).join('')}
+        </div>
+      `}
+      <div class="home-actions">
+        <button class="btn btn-primary" onclick="startCreator()">＋ Create New Guardian</button>
+      </div>
+      <div class="io-bar">
+        <button class="btn btn-sm btn-secondary" onclick="exportAll()" ${chars.length === 0 ? 'disabled' : ''}>⬇ Export All</button>
+        <button class="btn btn-sm btn-secondary" onclick="triggerImport()">⬆ Import</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importFile(event)">
+      </div>
+      <div class="import-notice">Export saves a .json backup you can re-import if browser data is cleared.</div>
+    </div>
+  `;
+        }
+
+        function charCard(c) {
+            const cls = CLASSES[c.class];
+            const sub = SUBCLASSES[c.subclass];
+            const d = derived(c);
+            return `
+    <div class="char-card" style="--cls-color:${cls.color}" onclick="viewChar('${c.id}')">
+      <div class="char-card-header">
+        <div>
+          <div class="char-card-name">${esc(c.name)}</div>
+          <div class="char-card-meta">${RACES[c.race].icon} ${RACES[c.race].name} · ${sub.name}</div>
+        </div>
+        <div class="char-card-levels">
+          <span class="level-badge">LL ${c.lightLevel}</span>
+          <span class="level-badge">CL ${c.characterLevel}</span>
+        </div>
+      </div>
+      <div class="char-card-stats">
+        <span>❤ ${d.hp} HP</span>
+        <span>⚡ ${d.totalSpd}ft</span>
+        <span>⚔ +${d.atkBonus} ATK</span>
+      </div>
+      <div class="char-card-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-sm btn-outline" onclick="viewChar('${c.id}')">View Sheet</button>
+        <button class="btn btn-sm btn-secondary" onclick="exportOne('${c.id}')">⬇ Export</button>
+        <button class="btn btn-sm btn-danger"  onclick="deleteChar('${c.id}')">Delete</button>
+      </div>
+    </div>
+  `;
+        }
+
+        /* ==========================================================
+           CREATOR WIZARD
+        ========================================================== */
+        function renderCreator() {
+            const s = STATE.step;
+            const steps = [
+                { n: 1, label: 'Info & Race' }, { n: 2, label: 'Class' }, { n: 3, label: 'Subclass' },
+                { n: 4, label: 'Abilities' }, { n: 5, label: 'Stats' }
+            ];
+            $app.innerHTML = `
+    <header class="site-header compact">
+      <div class="site-title small">
+        <span class="site-title-d">DEEN</span>
+        <span class="site-title-amp">&amp;</span>
+        <span class="site-title-d">DESTINY</span>
+      </div>
+      <button class="btn-back" onclick="goHome()">← Back to Guardians</button>
+    </header>
+    <div class="creator-wrap">
+      <div class="step-bar">
+        ${steps.map(st => `
+          <div class="step-item ${s === st.n ? 'active' : ''} ${s > st.n ? 'done' : ''}">
+            <div class="step-dot">${s > st.n ? '✓' : st.n}</div>
+            <div class="step-label">${st.label}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="creator-body" id="creator-body">
+        ${s === 1 ? step1() : ''} ${s === 2 ? step2() : ''} ${s === 3 ? step3() : ''}
+        ${s === 4 ? step4() : ''} ${s === 5 ? step5() : ''}
+      </div>
+    </div>
+  `;
+        }
+
+        function step1() {
+            const dr = STATE.draft;
+            return `
+    <div class="step-content">
+      <h2 class="step-title">Character Info &amp; Race</h2>
+      <div class="form-group">
+        <label class="form-label">Guardian Name</label>
+        <input type="text" id="char-name-input" class="form-input"
+               value="${esc(dr.name || '')}" placeholder="Enter your guardian's name…"
+               oninput="STATE.draft.name=this.value;updateStep1Next()">
+      </div>
+      <div class="form-row-double">
+        <div class="form-group">
+          <label class="form-label">Starting Character Level <span class="form-hint">(1–20, default 3)</span></label>
+          <input type="number" class="form-input" min="1" max="20" value="${dr.startingCL}"
+                 oninput="STATE.draft.startingCL=Math.max(1,Math.min(20,parseInt(this.value)||1));render()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Starting Light Level <span class="form-hint">(1–5, default 1)</span></label>
+          <input type="number" class="form-input" min="1" max="5" value="${dr.startingLL}"
+                 oninput="STATE.draft.startingLL=Math.max(1,Math.min(5,parseInt(this.value)||1));STATE.draft.selectedAbilities=[];render()">
+        </div>
+      </div>
+      <div class="level-info-box">
+        Starting at <strong>CL ${dr.startingCL}</strong> grants
+        <strong>${dr.startingCL * (dr.subclass === 'breaker' ? 6 : 3)} stat point${dr.startingCL * (dr.subclass === 'breaker' ? 6 : 3) !== 1 ? 's' : ''}</strong>
+        to allocate (calculated after subclass selection).
+        Starting at <strong>LL ${dr.startingLL}</strong> lets you choose
+        <strong>${dr.startingLL + 1} Light Abilit${dr.startingLL + 1 !== 1 ? 'ies' : 'y'}</strong>${dr.startingLL >= 2 ? ', and grants access to <strong>Grenades</strong>' : ''}${dr.startingLL >= 3 ? ' and your <strong>Super</strong>' : ''}.
+      </div>
+      <div class="subsection-title">Choose Your Race</div>
+      <div class="option-grid">
+        ${Object.values(RACES).map(r => `
+          <div class="option-card ${dr.race === r.id ? 'selected' : ''}" onclick="selRace('${r.id}')">
+            <div class="option-icon">${r.icon}</div>
+            <div class="option-name">${r.name}</div>
+            <div class="option-desc">${r.description}</div>
+            <ul class="option-traits">${r.traits.map(t => `<li>${t}</li>`).join('')}</ul>
+            ${r.raceAbilities.length ? `
+              <div class="option-abilities">
+                ${r.raceAbilities.map(a => `<div class="ability-chip">⚡ ${a.name}: ${a.description}</div>`).join('')}
+              </div>`: ''}
+          </div>
+        `).join('')}
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="goHome()">Cancel</button>
+        <button class="btn btn-primary" id="step1-next" onclick="nextStep()" ${!dr.race || !dr.name ? 'disabled' : ''}>
+          Next: Choose Class →
+        </button>
+      </div>
+    </div>
+  `;
+        }
+
+        function step2() {
+            const dr = STATE.draft;
+            return `
+    <div class="step-content">
+      <h2 class="step-title">Choose Your Class</h2>
+      <div class="class-grid">
+        ${Object.values(CLASSES).map(cls => `
+          <div class="class-card ${dr.class === cls.id ? 'selected' : ''}"
+               style="--cls-color:${cls.color}" onclick="selClass('${cls.id}')">
+            <div class="class-name">${cls.name}</div>
+            <div class="class-tagline">${cls.tagline}</div>
+            <div class="class-desc">${cls.description}</div>
+            <div class="class-traits-title">Class Traits:</div>
+            <ul class="class-traits">${cls.classTraits.map(t => `<li>${t}</li>`).join('')}</ul>
+            <div class="class-combat-info">
+              <span class="info-chip">❤ ×${cls.healthConversion} HP/pt</span>
+              <span class="info-chip">🎒 ${cls.weaponSlots} weapon slots</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+        <button class="btn btn-primary" onclick="nextStep()" ${!dr.class ? 'disabled' : ''}>
+          Next: Choose Subclass →
+        </button>
+      </div>
+    </div>
+  `;
+        }
+
+        function step3() {
+            const dr = STATE.draft;
+            const cls = CLASSES[dr.class];
+            return `
+    <div class="step-content">
+      <h2 class="step-title">Choose Your Subclass</h2>
+      <div class="option-grid">
+        ${cls.subclasses.map(sid => {
+                const sub = SUBCLASSES[sid];
+                return `
+            <div class="option-card subclass-card ${dr.subclass === sid ? 'selected' : ''}"
+                 style="--cls-color:${cls.color}" onclick="selSubclass('${sid}')">
+              <div class="option-name">${sub.name}</div>
+              <div class="option-motto">${sub.motto}</div>
+              <div class="option-desc">${sub.description}</div>
+              ${sub.specialRule ? `<div class="special-rule">⚡ ${sub.specialRule}</div>` : ''}
+              <div class="ability-list-preview">
+                ${sub.abilities.slice(0, 4).map(a => `<span class="ability-preview-name">${a.name}</span>`).join('')}
+                ${sub.abilities.length > 4 ? `<span class="ability-preview-more">+${sub.abilities.length - 4} more…</span>` : ''}
+              </div>
+              <div class="super-preview"><strong>Super bonus:</strong> ${cls.superSubclassBonuses[sid]}</div>
+            </div>
+          `;
+            }).join('')}
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+        <button class="btn btn-primary" onclick="nextStep()" ${!dr.subclass ? 'disabled' : ''}>
+          Next: Choose Abilities →
+        </button>
+      </div>
+    </div>
+  `;
+        }
+
+        function step4() {
+            const dr = STATE.draft;
+            const sub = SUBCLASSES[dr.subclass];
+            const cnt = dr.selectedAbilities.length;
+            const maxAbilities = dr.startingLL + 1;
+            return `
+    <div class="step-content">
+      <h2 class="step-title">Starting Light Abilities</h2>
+      <p class="step-desc">Starting at <strong>LL ${dr.startingLL}</strong> — choose <strong>${maxAbilities}</strong> Light Abilit${maxAbilities !== 1 ? 'ies' : 'y'} from your subclass. You unlock 1 additional ability per Light Level gained thereafter.</p>
+      <span class="selection-count ${cnt === maxAbilities ? 'done' : ''}">${cnt}/${maxAbilities} selected</span>
+      <div class="ability-selection-grid">
+        ${sub.abilities.map(a => {
+                const sel = dr.selectedAbilities.includes(a.id);
+                return `
+            <div class="ability-select-card ${sel ? 'selected' : ''} ${!sel && cnt >= maxAbilities ? 'disabled' : ''}"
+                 onclick="toggleAbility('${a.id}')">
+              <div class="ability-select-header">
+                <span class="ability-type-badge ${a.type}">${a.type}</span>
+                <span class="ability-select-name">${a.name}</span>
+                ${sel ? '<span class="check">✓</span>' : ''}
+              </div>
+              <div class="ability-select-desc">${a.description.replace(/\n/g, '<br>')}</div>
+            </div>
+          `;
+            }).join('')}
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+        <button class="btn btn-primary" onclick="nextStep()" ${cnt < maxAbilities ? 'disabled' : ''}>
+          Next: Allocate Stats →
+        </button>
+      </div>
+    </div>
+  `;
+        }
+
+        function step5() {
+            const dr = STATE.draft;
+            const isBreaker = dr.subclass === 'breaker';
+            const ptsPerLv = isBreaker ? 6 : 3;
+            const total = ptsPerLv * dr.startingCL;
+            const spent = Object.values(dr.statPoints).reduce((a, b) => a + b, 0);
+            const rem = total - spent;
+            return `
+    <div class="step-content">
+      <h2 class="step-title">Allocate Starting Stats</h2>
+      <p class="step-desc">All stats begin at <strong>0</strong>. You have <strong>${total}</strong> point${total !== 1 ? 's' : ''} to distribute — ${ptsPerLv} per Character Level × CL ${dr.startingCL}${isBreaker ? ' <em>(Breaker: 6 pts/level)</em>' : ''}.</p>
+      <div class="points-remaining ${rem === 0 ? 'done' : ''}">
+        Points remaining: <strong>${rem}</strong>
+      </div>
+      <div class="stat-alloc-grid">
+        ${Object.entries(STAT_META).map(([key, meta]) => {
+                const extra = dr.statPoints[key] || 0;
+                const cur = extra;
+                return `
+            <div class="stat-alloc-row">
+              <div class="stat-alloc-label">
+                <span class="stat-name">${meta.label}</span>
+                <span class="stat-hint">${meta.hint}</span>
+              </div>
+              <div class="stat-alloc-controls">
+                <button class="stat-btn" onclick="adjCreatorStat('${key}',-1)" ${extra <= 0 ? 'disabled' : ''}>−</button>
+                <span class="stat-value">${cur}</span>
+                <button class="stat-btn" onclick="adjCreatorStat('${key}',1)"  ${rem <= 0 || cur >= meta.max ? 'disabled' : ''}>+</button>
+              </div>
+            </div>
+          `;
+            }).join('')}
+      </div>
+      <div class="step-nav">
+        <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+        <button class="btn btn-primary" onclick="finishCreation()" ${rem !== 0 ? 'disabled' : ''}>
+          ✓ Create Guardian
+        </button>
+      </div>
+    </div>
+  `;
+        }
+
+        /* ==========================================================
+           SHEET
+        ========================================================== */
+        function renderSheet() {
+            const ch = STATE.chars.find(c => c.id === STATE.activeId);
+            if (!ch) { goHome(); return; }
+
+            const cls = CLASSES[ch.class];
+            const race = RACES[ch.race];
+            const sub = SUBCLASSES[ch.subclass];
+            const d = derived(ch);
+
+            const superCharges = Math.max(0, ch.lightLevel - 2);
+
+            $app.innerHTML = `
+    <div class="sheet-wrap" style="--cls-color:${cls.color}">
+
+      <!-- HEADER -->
+      <div class="sheet-header">
+        <div class="sheet-nav">
+          <button class="btn-back" onclick="goHome()">← All Guardians</button>
+          <div class="sheet-actions-top">
+            ${ch.unspentPoints > 0 ? `<span class="points-alert">⚠ ${ch.unspentPoints} unspent pts</span>` : ''}
+            <button class="btn btn-sm btn-outline" onclick="openLevelUp()">Level Up</button>
+          </div>
+        </div>
+        <div class="sheet-title-line">
+          <span class="sheet-name">${esc(ch.name)}</span>
+        </div>
+        <div class="sheet-meta">
+          <span class="meta-badge race">${race.icon} ${race.name}</span>
+          <span class="meta-badge class" style="background:${cls.color}18;border-color:${cls.color}55;color:${cls.color}">${cls.name}</span>
+          <span class="meta-badge sub">${sub.name}</span>
+          <span class="meta-badge ll">LL ${ch.lightLevel}</span>
+          <span class="meta-badge cl">CL ${ch.characterLevel}</span>
+        </div>
+      </div>
+
+      <!-- BODY -->
+      <div class="sheet-body">
+
+        <!-- LEFT COLUMN -->
+        <div class="sheet-col">
+
+          <!-- STATS -->
+          <div class="sheet-section">
+            <div class="section-header">CHARACTER STATS</div>
+            <div class="stats-grid">
+              ${[['strength', 'STR'], ['agility', 'AGI'], ['wisdom', 'WIS'], ['health', 'HLTH'], ['speed', 'SPD'], ['stamina', 'STAM']].map(([k, abbr]) => `
+                <div class="stat-box">
+                  <div class="stat-abbr">${abbr}</div>
+                  <div class="stat-val">${ch.stats[k]}</div>
+                  <div class="stat-max">/${STAT_META[k].max}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- DERIVED -->
+          <div class="sheet-section">
+            <div class="section-header">DERIVED STATS</div>
+            <div class="derived-grid">
+              <div class="derived-item">
+                <span class="derived-label">Max HP</span>
+                <span class="derived-value hp">${d.hp}</span>
+              </div>
+              <div class="derived-item">
+                <span class="derived-label">Current HP</span>
+                <input type="number" class="hp-input" min="0" max="${d.hp}"
+                       value="${ch.currentHP ?? d.hp}"
+                       onchange="updateCurrentHP(this.value)">
+              </div>
+              <div class="derived-item">
+                <span class="derived-label">Speed</span>
+                <span class="derived-value">${d.totalSpd} ft</span>
+              </div>
+              <div class="derived-item">
+                <span class="derived-label">Attack Bonus</span>
+                <span class="derived-value">+${d.atkBonus}</span>
+              </div>
+              <div class="derived-item">
+                <span class="derived-label">Weapon Dmg Bonus</span>
+                <span class="derived-value">+${d.wepDmgBonus}</span>
+              </div>
+              <div class="derived-item">
+                <span class="derived-label">Light Dmg Bonus</span>
+                <span class="derived-value">+${d.ltDmgBonus}</span>
+              </div>
+              <div class="derived-item">
+                <span class="derived-label">Stamina Tier</span>
+                <span class="derived-value small">${d.staminaTier}</span>
+              </div>
+              ${d.chaosCharges !== null ? `
+                <div class="derived-item">
+                  <span class="derived-label">Chaos Charges</span>
+                  <span class="derived-value">${d.chaosCharges}</span>
+                </div>`: ''}
+              <div class="derived-item">
+                <span class="derived-label">Fall Damage</span>
+                <span class="derived-value small">1d6 per 10ft${ch.class === 'hunter' ? ' (½ with roll)' : ch.class === 'warlock' ? ' (glide)' : ''}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- COMBAT ACTIONS -->
+          <div class="sheet-section">
+            <div class="section-header">COMBAT ACTIONS</div>
+            <div class="action-list">
+              <div class="action-item">
+                <span class="action-label light">⚡ Light Actions</span>
+                <span class="action-val">${d.lightActions}</span>
+              </div>
+              <div class="action-item">
+                <span class="action-label major">⚔ Major Actions</span>
+                <span class="action-val">${d.majorActions}</span>
+              </div>
+              <div class="action-item">
+                <span class="action-label bonus">✦ Bonus Action</span>
+                <span class="action-val">1</span>
+              </div>
+              <div class="action-item">
+                <span class="action-label move">↦ Movement</span>
+                <span class="action-val">${d.totalSpd} ft</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- RACE -->
+          <div class="sheet-section">
+            <div class="section-header">RACE: ${race.name.toUpperCase()}</div>
+            <ul class="trait-list">
+              ${race.traits.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+            ${race.raceAbilities.length ? `
+              <div class="race-light-abilities">
+                ${race.raceAbilities.map(a => `
+                  <div class="race-ability">
+                    <span class="race-ability-name">⚡ ${a.name}</span>
+                    <span class="race-ability-desc">${a.description}</span>
+                  </div>`).join('')}
+              </div>`: ''}
+          </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="sheet-col">
+
+          <!-- CLASS TRAITS -->
+          <div class="sheet-section">
+            <div class="section-header">CLASS: ${cls.name.toUpperCase()}</div>
+            <ul class="trait-list">
+              ${cls.classTraits.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+            ${sub.specialRule ? `<div class="special-rule-box">⚡ ${sub.specialRule}</div>` : ''}
+          </div>
+
+          <!-- WEAPONS -->
+          <div class="sheet-section">
+            <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
+            <div class="gear-slots">
+              ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => `
+                <div class="gear-slot">
+                  <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
+                  <input type="text" class="slot-input"
+                         value="${esc(ch.weapons[i] || '')}" placeholder="Empty…"
+                         onchange="updateWeapon(${i},this.value)">
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- ARMOR -->
+          <div class="sheet-section">
+            <div class="section-header">ARMOR (Helmet · Chest · Boots)</div>
+            <div class="armor-grid">
+              ${[['helmet', 'Helmet'], ['chest', 'Chest'], ['boots', 'Boots']].map(([k, lbl]) => `
+                <div class="armor-row">
+                  <span class="armor-label">${lbl}</span>
+                  <input type="text" class="slot-input"
+                         value="${esc(ch.armor[k] || '')}" placeholder="Equipped…"
+                         onchange="updateArmor('${k}',this.value)">
+                  <input type="text" class="slot-input spare"
+                         value="${esc(ch.armor[k + 'Spare'] || '')}" placeholder="Spare…"
+                         onchange="updateArmor('${k}Spare',this.value)">
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- GRENADES -->
+          <div class="sheet-section">
+            <div class="section-header">GRENADES (2 max · replenish on long rest)</div>
+            <div class="grenade-options">
+              ${cls.grenadeOptions.map(g => `
+                <div class="grenade-info"><strong>${g}:</strong> ${GRENADE_DESCS[g]}</div>
+              `).join('')}
+            </div>
+            <div class="grenade-slots">
+              ${[1, 2].map(slot => `
+                <div class="gear-slot">
+                  <span class="slot-label">Slot ${slot}</span>
+                  <select class="slot-select" onchange="updateGrenade(${slot},this.value)">
+                    ${cls.grenadeOptions.map(g => `
+                      <option value="${g}" ${(slot === 1 ? ch.grenadeSlot1 : ch.grenadeSlot2) === g ? 'selected' : ''}>${g}</option>
+                    `).join('')}
+                  </select>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- MELEES -->
+          <div class="sheet-section">
+            <div class="section-header">MELEES</div>
+            <div class="melee-list">
+              ${cls.meleeOptions.map(m => `
+                <div class="melee-item"><strong>${m}:</strong> ${MELEE_DESCS[m]}</div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- LIGHT ABILITIES -->
+          <div class="sheet-section">
+            <div class="section-header">⚡ LIGHT ABILITIES — ${sub.name} (LL ${ch.lightLevel})</div>
+            <div class="ability-grid">
+              ${sub.abilities.map(a => {
+                const known = ch.selectedAbilities.includes(a.id);
+                return `
+                  <div class="ability-card ${known ? 'unlocked' : 'locked'}">
+                    <div class="ability-card-header">
+                      <span class="ability-type-badge ${a.type}">${a.type}</span>
+                      <span class="ability-card-name">${a.name}</span>
+                      <span class="ability-status ${known ? '' : 'locked'}">${known ? '✓ Known' : '🔒'}</span>
+                    </div>
+                    ${known ? `<div class="ability-card-desc">${a.description.replace(/\n/g, '<br>')}</div>` : ''}
+                  </div>
+                `;
+            }).join('')}
+            </div>
+          </div>
+
+          <!-- SUPER -->
+          <div class="sheet-section ${ch.lightLevel < 3 ? 'locked-section' : ''}">
+            <div class="section-header">
+              ⚡ SUPER
+              ${ch.lightLevel < 3 ? '(Unlocks at LL 3)' :
+                    `(${superCharges} charge${superCharges !== 1 ? 's' : ''} · resets on long rest)`}
+            </div>
+            ${ch.lightLevel < 3 ?
+                    `<div class="locked-content">🔒 Unlocks at Light Level 3</div>` :
+                    `<div class="super-content">
+                <div class="super-base">${cls.superDescription}</div>
+                <div class="super-subclass"><strong>${sub.name} bonus:</strong> ${cls.superSubclassBonuses[ch.subclass]}</div>
+               </div>`}
+          </div>
+
+          <!-- NOTES -->
+          <div class="sheet-section">
+            <div class="section-header">NOTES</div>
+            <textarea class="notes-area" placeholder="Quest notes, inventory, allies, enemies…"
+                      onchange="updateNotes(this.value)">${esc(ch.notes || '')}</textarea>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  `;
+        }
+
+        /* ==========================================================
+           ACTIONS — NAVIGATION
+        ========================================================== */
+        function goHome() { STATE.view = 'home'; STATE.draft = null; render(); }
+
+        function startCreator() {
+            STATE.view = 'creator';
+            STATE.step = 1;
+            STATE.draft = {
+                name: '', race: null, class: null, subclass: null,
+                startingCL: 3, startingLL: 1,
+                selectedAbilities: [],
+                statPoints: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
+            };
+            render();
+        }
+
+        function viewChar(id) { STATE.activeId = id; STATE.view = 'sheet'; render(); }
+
+        function deleteChar(id) {
+            if (!confirm('Permanently delete this guardian?')) return;
+            STATE.chars = STATE.chars.filter(c => c.id !== id);
+            save(); render();
+        }
+
+        function nextStep() { STATE.step++; render(); }
+        function prevStep() { STATE.step--; render(); }
+
+        function updateStep1Next() {
+            const btn = document.getElementById('step1-next');
+            if (btn) btn.disabled = !(STATE.draft.name && STATE.draft.race);
+        }
+
+        /* ==========================================================
+           ACTIONS — CREATOR
+        ========================================================== */
+        function selRace(id) { STATE.draft.race = id; render(); updateStep1Next(); }
+        function selClass(id) { STATE.draft.class = id; STATE.draft.subclass = null; STATE.draft.selectedAbilities = []; render(); }
+        function selSubclass(id) { STATE.draft.subclass = id; STATE.draft.selectedAbilities = []; render(); }
+
+        function toggleAbility(id) {
+            const sel = STATE.draft.selectedAbilities;
+            const maxAbilities = STATE.draft.startingLL + 1;
+            if (sel.includes(id)) STATE.draft.selectedAbilities = sel.filter(a => a !== id);
+            else if (sel.length < maxAbilities) STATE.draft.selectedAbilities = [...sel, id];
+            render();
+        }
+
+        function adjCreatorStat(key, delta) {
+            const pts = STATE.draft.statPoints;
+            const newV = (pts[key] || 0) + delta;
+            if (newV < 0) return;
+            const ptsPerLv = STATE.draft.subclass === 'breaker' ? 6 : 3;
+            const total = ptsPerLv * STATE.draft.startingCL;
+            const spent = Object.values(pts).reduce((a, b) => a + b, 0) + delta;
+            if (spent > total) return;
+            if (newV > STAT_META[key].max) return;
+            pts[key] = newV;
+            render();
+        }
+
+        function finishCreation() {
+            const dr = STATE.draft;
+            const id = 'ch_' + Date.now();
+            const ch = {
+                id, name: dr.name || 'Unknown Guardian',
+                race: dr.race, class: dr.class, subclass: dr.subclass,
+                lightLevel: dr.startingLL, characterLevel: dr.startingCL, unspentPoints: 0,
+                stats: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 },
+                selectedAbilities: [...dr.selectedAbilities],
+                weapons: ['', '', ''],
+                armor: { helmet: '', helmetSpare: '', chest: '', chestSpare: '', boots: '', bootsSpare: '' },
+                grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
+                grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
+                notes: '', currentHP: null
+            };
+            for (const [k, v] of Object.entries(dr.statPoints)) ch.stats[k] += v;
+            ch.currentHP = ch.stats.health * CLASSES[ch.class].healthConversion;
+            STATE.chars.push(ch);
+            save();
+            STATE.activeId = id; STATE.view = 'sheet'; STATE.draft = null;
+            render();
+        }
+
+        /* ==========================================================
+           ACTIONS — SHEET EDITS
+        ========================================================== */
+        function getActive() { return STATE.chars.find(c => c.id === STATE.activeId); }
+
+        function updateWeapon(i, v) { const c = getActive(); if (!c) return; c.weapons[i] = v; save(); }
+        function updateArmor(k, v) { const c = getActive(); if (!c) return; c.armor[k] = v; save(); }
+        function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
+        function updateNotes(v) { const c = getActive(); if (!c) return; c.notes = v; save(); }
+        function updateCurrentHP(v) {
+            const c = getActive(); if (!c) return;
+            const d = derived(c);
+            c.currentHP = Math.max(0, Math.min(d.hp, parseInt(v) || 0));
+            save();
+        }
+
+        /* ==========================================================
+           LEVEL UP MODAL
+        ========================================================== */
+        function openLevelUp() {
+            const ch = getActive(); if (!ch) return;
+            const sub = SUBCLASSES[ch.subclass];
+            showModal(`
+    <div class="levelup-modal">
+      <h3>Level Up — ${esc(ch.name)}</h3>
+      <p>Choose which category to advance:</p>
+      <div class="levelup-options">
+        <button class="btn btn-primary" onclick="doLevelUp('character')" ${ch.characterLevel >= 20 ? 'disabled' : ''}>
+          Character Level (CL ${ch.characterLevel} → ${Math.min(20, ch.characterLevel + 1)})
+          <small>Gain ${ptsPerLevel(ch)} stat points to allocate</small>
+        </button>
+        <button class="btn btn-secondary" onclick="doLevelUp('light')" ${ch.lightLevel >= 5 ? 'disabled' : ''}>
+          Light Level (LL ${ch.lightLevel} → ${Math.min(5, ch.lightLevel + 1)})
+          <small>Unlock 1 new ability · abilities scale with new LL</small>
+        </button>
+      </div>
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+        }
+
+        function doLevelUp(type) {
+            const ch = getActive(); if (!ch) return;
+            if (type === 'character') {
+                if (ch.characterLevel >= 20) return;
+                const pts = ptsPerLevel(ch);
+                STATE.pendingLevelUp = {
+                    charId: ch.id,
+                    newLevel: ch.characterLevel + 1,
+                    pointsTotal: pts,
+                    allocated: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
+                };
+                STATE.modalLocked = true;
+                closeModal();
+                openStatAlloc();
+            } else {
+                if (ch.lightLevel >= 5) return;
+                ch.lightLevel++;
+                save(); closeModal();
+                openAbilityUnlock();
+                render();
+            }
+        }
+
+        function openStatAlloc() {
+            const ch = getActive(); if (!ch) return;
+            const pending = STATE.pendingLevelUp; if (!pending) return;
+
+            const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
+            const remaining = pending.pointsTotal - totalSpent;
+
+            showModal(`
+      <div class="levelup-modal">
+        <h3>Allocate Stat Points — CL ${ch.characterLevel} → ${pending.newLevel}</h3>
+        <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
+          Distribute <strong>${pending.pointsTotal}</strong> point${pending.pointsTotal !== 1 ? 's' : ''}.
+          Use − to undo any allocation before confirming.
+        </p>
+        <div class="points-remaining ${remaining === 0 ? 'done' : ''}" style="margin-bottom:12px">
+          Points remaining: <strong>${remaining}</strong>
+        </div>
+        <div class="stat-alloc-grid modal-stat-grid">
+          ${Object.entries(STAT_META).map(([k, meta]) => {
+                const cur = ch.stats[k];
+                const alloc = pending.allocated[k];
+                const newVal = cur + alloc;
+                return `
+            <div class="stat-alloc-row">
+              <div class="stat-alloc-label">
+                <span class="stat-name">${meta.label}</span>
+                <span class="stat-hint-small">
+                  ${cur}${alloc > 0 ? ` <span style="color:var(--success)">+${alloc}</span>` : ''} / ${meta.max}
+                </span>
+              </div>
+              <div class="stat-alloc-controls">
+                <button class="stat-btn" onclick="adjPendingStat('${k}',-1)" ${alloc <= 0 ? 'disabled' : ''}>−</button>
+                <span class="stat-value">${newVal}</span>
+                <button class="stat-btn" onclick="adjPendingStat('${k}',1)"  ${remaining <= 0 || newVal >= meta.max ? 'disabled' : ''}>+</button>
+              </div>
+            </div>
+          `;
+            }).join('')}
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn btn-outline" style="flex:1" onclick="cancelLevelUp()">Cancel</button>
+          <button class="btn btn-primary" style="flex:2" onclick="confirmLevelUp()" ${remaining !== 0 ? 'disabled' : ''}>
+            ${remaining === 0 ? '✓ Confirm Level Up' : `Allocate ${remaining} more point${remaining !== 1 ? 's' : ''}…`}
+          </button>
+        </div>
+      </div>
+    `);
+        }
+
+        function adjPendingStat(key, delta) {
+            const pending = STATE.pendingLevelUp; if (!pending) return;
+            const ch = getActive(); if (!ch) return;
+            const alloc = pending.allocated[key] || 0;
+            const newAlloc = alloc + delta;
+            if (newAlloc < 0) return;
+            const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0) + delta;
+            if (totalSpent > pending.pointsTotal) return;
+            if (delta > 0 && ch.stats[key] + newAlloc >= STAT_META[key].max) return;
+            pending.allocated[key] = newAlloc;
+            openStatAlloc();
+        }
+
+        function confirmLevelUp() {
+            const ch = getActive(); if (!ch) return;
+            const pending = STATE.pendingLevelUp; if (!pending) return;
+            const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
+            if (totalSpent !== pending.pointsTotal) return;
+            ch.characterLevel = pending.newLevel;
+            for (const [k, v] of Object.entries(pending.allocated)) ch.stats[k] += v;
+            STATE.pendingLevelUp = null;
+            STATE.modalLocked = false;
+            save(); closeModal(); render();
+        }
+
+        function cancelLevelUp() {
+            STATE.pendingLevelUp = null;
+            STATE.modalLocked = false;
+            closeModal(); render();
+        }
+
+        function openAbilityUnlock() {
+            const ch = getActive(); if (!ch) return;
+            const sub = SUBCLASSES[ch.subclass];
+            const available = sub.abilities.filter(a => !ch.selectedAbilities.includes(a.id));
+            if (available.length === 0) {
+                showModal(`<div class="levelup-modal"><h3>All Abilities Unlocked!</h3><p>Your subclass has no more abilities to unlock.</p><button class="btn btn-primary" onclick="closeModal()">OK</button></div>`);
+                return;
+            }
+            showModal(`
+    <div class="levelup-modal ability-unlock-modal">
+      <h3>Unlock a New Ability (LL ${ch.lightLevel})</h3>
+      <p>Select 1 ability to add to your sheet:</p>
+      <div class="ability-selection-grid">
+        ${available.map(a => `
+          <div class="ability-select-card" onclick="unlockAbility('${a.id}')">
+            <div class="ability-select-header">
+              <span class="ability-type-badge ${a.type}">${a.type}</span>
+              <span class="ability-select-name">${a.name}</span>
+            </div>
+            <div class="ability-select-desc">${a.description.replace(/\n/g, '<br>')}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-outline" style="margin-top:12px" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+        }
+
+        function unlockAbility(id) {
+            const ch = getActive(); if (!ch) return;
+            ch.selectedAbilities.push(id);
+            save(); closeModal(); render();
+        }
+
+        function closeModalAndRender() { closeModal(); render(); }
+
+        /* ==========================================================
+           EXPORT / IMPORT
+        ========================================================== */
+        function downloadJSON(data, filename) {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href = url; a.download = filename; a.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function exportAll() {
+            if (!STATE.chars.length) return;
+            const date = new Date().toISOString().slice(0, 10);
+            downloadJSON({ version: 1, chars: STATE.chars }, `deen-and-destiny-backup-${date}.json`);
+        }
+
+        function exportOne(id) {
+            const ch = STATE.chars.find(c => c.id === id);
+            if (!ch) return;
+            const safe = ch.name.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+            downloadJSON({ version: 1, chars: [ch] }, `${safe}-character.json`);
+        }
+
+        function triggerImport() {
+            document.getElementById('import-file').value = '';
+            document.getElementById('import-file').click();
+        }
+
+        function importFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = evt => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    const incoming = Array.isArray(data) ? data
+                                   : (data.chars && Array.isArray(data.chars)) ? data.chars
+                                   : null;
+                    if (!incoming || !incoming.length) { alert('No character data found in that file.'); return; }
+                    let added = 0, skipped = 0;
+                    for (const ch of incoming) {
+                        if (!ch.id || !ch.name || !ch.class) { skipped++; continue; }
+                        if (STATE.chars.find(c => c.id === ch.id)) {
+                            // Duplicate id — assign a new one
+                            ch.id = 'ch_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+                        }
+                        STATE.chars.push(ch);
+                        added++;
+                    }
+                    save();
+                    render();
+                    if (skipped) alert(`Imported ${added} guardian${added !== 1 ? 's' : ''}. ${skipped} entr${skipped !== 1 ? 'ies' : 'y'} skipped (invalid format).`);
+                } catch (err) {
+                    alert('Failed to parse file. Make sure it is a valid Deen & Destiny JSON export.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        /* ==========================================================
+           MODAL
+        ========================================================== */
+        function showModal(html) {
+            const el = document.getElementById('modal-content');
+            el.innerHTML = html;
+            document.getElementById('modal-overlay').style.display = 'flex';
+        }
+        function closeModal() {
+            document.getElementById('modal-overlay').style.display = 'none';
+        }
+        function handleOverlayClick(e) {
+            if (STATE.modalLocked) return;
+            if (e.target === e.currentTarget) closeModal();
+        }
+
+        /* ==========================================================
+           UTILITY
+        ========================================================== */
+        function esc(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        /* ==========================================================
+           INIT
+        ========================================================== */
+        load();
+        render();
+    </script>
+</body>
+
+</html>
