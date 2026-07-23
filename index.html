@@ -2127,6 +2127,7 @@
           <button class="btn-back" onclick="goHome()">← All Guardians</button>
           <div class="sheet-actions-top">
             ${ch.unspentPoints > 0 ? `<span class="points-alert">⚠ ${ch.unspentPoints} unspent pts</span>` : ''}
+            <button class="btn btn-sm btn-outline" onclick="openAddCharacterPoints()">+ CP</button>
             <button class="btn btn-sm btn-outline" onclick="openLevelUp()">Level Up</button>
           </div>
         </div>
@@ -2361,6 +2362,17 @@
                </div>`}
           </div>
 
+          <!-- GLIMMER -->
+          <div class="sheet-section">
+            <div class="section-header">GLIMMER</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.2rem">💰</span>
+              <input type="number" min="0" class="form-input" style="width:140px;text-align:right"
+                     value="${ch.glimmer || 0}"
+                     oninput="updateGlimmer(this.value)">
+            </div>
+          </div>
+
           <!-- NOTES -->
           <div class="sheet-section">
             <div class="section-header">NOTES</div>
@@ -2448,7 +2460,7 @@
                 armor: { helmet: '', helmetSpare: '', chest: '', chestSpare: '', boots: '', bootsSpare: '' },
                 grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
                 grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
-                notes: '', currentHP: null
+                notes: '', glimmer: 0, currentHP: null
             };
             for (const [k, v] of Object.entries(dr.statPoints)) ch.stats[k] += v;
             ch.currentHP = ch.stats.health * CLASSES[ch.class].healthConversion;
@@ -2467,6 +2479,7 @@
         function updateArmor(k, v) { const c = getActive(); if (!c) return; c.armor[k] = v; save(); }
         function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
         function updateNotes(v) { const c = getActive(); if (!c) return; c.notes = v; save(); }
+        function updateGlimmer(v) { const c = getActive(); if (!c) return; c.glimmer = Math.max(0, parseInt(v, 10) || 0); save(); }
         function updateCurrentHP(v) {
             const c = getActive(); if (!c) return;
             const d = derived(c);
@@ -2477,6 +2490,54 @@
         /* ==========================================================
            LEVEL UP MODAL
         ========================================================== */
+        function openAddCharacterPoints() {
+            const ch = getActive(); if (!ch) return;
+            showModal(`
+    <div class="levelup-modal">
+      <h3>Add Character Points — ${esc(ch.name)}</h3>
+      <p>Each character point grants <strong>3 stat points</strong> to allocate.</p>
+      <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin:18px 0">
+        <button class="stat-btn" onclick="adjCPInput(-1)">−</button>
+        <span id="cp-input-val" style="font-size:1.6rem;font-weight:700;min-width:2rem;text-align:center">1</span>
+        <button class="stat-btn" onclick="adjCPInput(1)">+</button>
+      </div>
+      <p style="color:var(--text-muted);font-size:.85rem;text-align:center">
+        = <span id="cp-stat-preview">3</span> stat points to allocate
+      </p>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:2" onclick="doAddCharacterPoints()">Allocate Points</button>
+      </div>
+    </div>
+  `);
+            window._cpCount = 1;
+        }
+
+        function adjCPInput(delta) {
+            window._cpCount = Math.max(1, (window._cpCount || 1) + delta);
+            const el = document.getElementById('cp-input-val');
+            const pr = document.getElementById('cp-stat-preview');
+            if (el) el.textContent = window._cpCount;
+            if (pr) pr.textContent = window._cpCount * 3;
+        }
+
+        function doAddCharacterPoints() {
+            const ch = getActive(); if (!ch) return;
+            const count = window._cpCount || 1;
+            const pts = count * 3;
+            STATE.pendingLevelUp = {
+                charId: ch.id,
+                type: 'charpoints',
+                cpCount: count,
+                newLevel: ch.characterLevel,
+                pointsTotal: pts,
+                allocated: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
+            };
+            STATE.modalLocked = true;
+            closeModal();
+            openStatAlloc();
+        }
+
         function openLevelUp() {
             const ch = getActive(); if (!ch) return;
             const sub = SUBCLASSES[ch.subclass];
@@ -2506,6 +2567,7 @@
                 const pts = ptsPerLevel(ch);
                 STATE.pendingLevelUp = {
                     charId: ch.id,
+                    type: 'levelup',
                     newLevel: ch.characterLevel + 1,
                     pointsTotal: pts,
                     allocated: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
@@ -2531,7 +2593,7 @@
 
             showModal(`
       <div class="levelup-modal">
-        <h3>Allocate Stat Points — CL ${ch.characterLevel} → ${pending.newLevel}</h3>
+        <h3>${pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP (${pending.pointsTotal} pts)` : `Allocate Stat Points — CL ${ch.characterLevel} → ${pending.newLevel}`}</h3>
         <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
           Distribute <strong>${pending.pointsTotal}</strong> point${pending.pointsTotal !== 1 ? 's' : ''}.
           Use − to undo any allocation before confirming.
@@ -2564,7 +2626,7 @@
         <div style="display:flex;gap:10px;margin-top:16px">
           <button class="btn btn-outline" style="flex:1" onclick="cancelLevelUp()">Cancel</button>
           <button class="btn btn-primary" style="flex:2" onclick="confirmLevelUp()" ${remaining !== 0 ? 'disabled' : ''}>
-            ${remaining === 0 ? '✓ Confirm Level Up' : `Allocate ${remaining} more point${remaining !== 1 ? 's' : ''}…`}
+            ${remaining === 0 ? (pending.type === 'charpoints' ? '✓ Confirm Character Points' : '✓ Confirm Level Up') : `Allocate ${remaining} more point${remaining !== 1 ? 's' : ''}…`}
           </button>
         </div>
       </div>
@@ -2589,7 +2651,7 @@
             const pending = STATE.pendingLevelUp; if (!pending) return;
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
             if (totalSpent !== pending.pointsTotal) return;
-            ch.characterLevel = pending.newLevel;
+            if (pending.type !== 'charpoints') ch.characterLevel = pending.newLevel;
             for (const [k, v] of Object.entries(pending.allocated)) ch.stats[k] += v;
             STATE.pendingLevelUp = null;
             STATE.modalLocked = false;
@@ -2643,8 +2705,8 @@
         ========================================================== */
         function downloadJSON(data, filename) {
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
             a.href = url; a.download = filename; a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
@@ -2675,8 +2737,8 @@
                 try {
                     const data = JSON.parse(evt.target.result);
                     const incoming = Array.isArray(data) ? data
-                                   : (data.chars && Array.isArray(data.chars)) ? data.chars
-                                   : null;
+                        : (data.chars && Array.isArray(data.chars)) ? data.chars
+                            : null;
                     if (!incoming || !incoming.length) { alert('No character data found in that file.'); return; }
                     let added = 0, skipped = 0;
                     for (const ch of incoming) {
