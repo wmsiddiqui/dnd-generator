@@ -1514,11 +1514,34 @@
             border-top: 1px solid var(--border);
             margin: 12px 0;
         }
+
+        /* CUSTOM TOOLTIP */
+        #tt {
+            position: fixed;
+            z-index: 9999;
+            background: #1a2840;
+            border: 1px solid var(--border2);
+            border-radius: 5px;
+            padding: 6px 10px;
+            font-size: .75rem;
+            color: var(--text);
+            max-width: 220px;
+            line-height: 1.4;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .12s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .5);
+        }
+
+        #tt.visible {
+            opacity: 1;
+        }
     </style>
 </head>
 
 <body>
     <div id="app"></div>
+    <div id="tt"></div>
     <div class="modal-overlay" id="modal-overlay" onclick="handleOverlayClick(event)">
         <div class="modal-content" id="modal-content"></div>
     </div>
@@ -2182,7 +2205,7 @@
             <div class="section-header collapsible" onclick="toggleSection(this)">CHARACTER STATS</div>
             <div class="stats-grid">
               ${[['strength', 'STR'], ['agility', 'AGI'], ['wisdom', 'WIS'], ['health', 'HLTH'], ['speed', 'SPD'], ['stamina', 'STAM']].map(([k, abbr]) => `
-                <div class="stat-box">
+                <div class="stat-box" data-tooltip="${STAT_META[k].hint}">
                   <div class="stat-abbr">${abbr}</div>
                   <div class="stat-val">${ch.stats[k]}</div>
                   <div class="stat-max">/${STAT_META[k].max}</div>
@@ -2307,7 +2330,7 @@
               `).join('')}
             </div>
           </div>
-          
+
           <!-- WEAPONS -->
           <div class="sheet-section">
             <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
@@ -2641,6 +2664,7 @@
             <div class="stat-alloc-row">
               <div class="stat-alloc-label">
                 <span class="stat-name">${meta.label}</span>
+                <span class="stat-hint-small">${meta.hint}</span>
                 <span class="stat-hint-small">
                   ${cur}${alloc > 0 ? ` <span style="color:var(--success)">+${alloc}</span>` : ''} / ${meta.max}
                 </span>
@@ -2817,6 +2841,52 @@
         /* ==========================================================
            INIT
         ========================================================== */
+        /* --- Tooltip --- */
+        (function () {
+            const tip = document.getElementById('tt');
+            let hideTimer;
+
+            function show(text, x, y) {
+                clearTimeout(hideTimer);
+                tip.textContent = text;
+                const vw = window.innerWidth, vh = window.innerHeight;
+                let left = x + 12, top = y - 36;
+                // Clamp to viewport after estimating size
+                if (left + 230 > vw - 8) left = x - 230;
+                if (top < 8) top = y + 20;
+                tip.style.left = left + 'px';
+                tip.style.top = top + 'px';
+                tip.classList.add('visible');
+            }
+
+            function hide(delay) {
+                hideTimer = setTimeout(() => tip.classList.remove('visible'), delay || 0);
+            }
+
+            document.addEventListener('mouseover', e => {
+                const el = e.target.closest('[data-tooltip]');
+                if (el) show(el.dataset.tooltip, e.clientX, e.clientY);
+                else hide();
+            });
+            document.addEventListener('mousemove', e => {
+                if (tip.classList.contains('visible')) {
+                    const el = e.target.closest('[data-tooltip]');
+                    if (el) show(el.dataset.tooltip, e.clientX, e.clientY);
+                }
+            });
+            document.addEventListener('mouseout', e => {
+                if (!e.target.closest('[data-tooltip]')) return;
+                hide();
+            });
+            document.addEventListener('touchstart', e => {
+                const el = e.target.closest('[data-tooltip]');
+                if (!el) { hide(); return; }
+                const t = e.touches[0];
+                show(el.dataset.tooltip, t.clientX, t.clientY);
+                hide(2500);
+            }, { passive: true });
+        })();
+
         load();
         render();
     </script>
