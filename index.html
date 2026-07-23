@@ -1031,6 +1031,34 @@
             border-bottom: 1px solid var(--border);
         }
 
+        .section-header.collapsible {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header.collapsible::after {
+            content: '▼';
+            font-size: .6rem;
+            opacity: .5;
+            flex-shrink: 0;
+        }
+
+        .sheet-section.collapsed .section-header {
+            margin-bottom: 0;
+            border-bottom-color: transparent;
+        }
+
+        .sheet-section.collapsed .section-header.collapsible::after {
+            content: '▶';
+        }
+
+        .sheet-section.collapsed>*:not(.section-header) {
+            display: none;
+        }
+
         /* STATS */
         .stats-grid {
             display: grid;
@@ -2151,7 +2179,7 @@
 
           <!-- STATS -->
           <div class="sheet-section">
-            <div class="section-header">CHARACTER STATS</div>
+            <div class="section-header collapsible" onclick="toggleSection(this)">CHARACTER STATS</div>
             <div class="stats-grid">
               ${[['strength', 'STR'], ['agility', 'AGI'], ['wisdom', 'WIS'], ['health', 'HLTH'], ['speed', 'SPD'], ['stamina', 'STAM']].map(([k, abbr]) => `
                 <div class="stat-box">
@@ -2163,13 +2191,38 @@
             </div>
           </div>
 
+          <!-- RACE -->
+          <div class="sheet-section">
+            <div class="section-header collapsible" onclick="toggleSection(this)">RACE: ${race.name.toUpperCase()}</div>
+            <ul class="trait-list">
+              ${race.traits.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+            ${race.raceAbilities.length ? `
+              <div class="race-light-abilities">
+                ${race.raceAbilities.map(a => `
+                  <div class="race-ability">
+                    <span class="race-ability-name">⚡ ${a.name}</span>
+                    <span class="race-ability-desc">${a.description}</span>
+                  </div>`).join('')}
+              </div>`: ''}
+          </div>
+
+          <!-- CLASS TRAITS -->
+          <div class="sheet-section">
+            <div class="section-header collapsible" onclick="toggleSection(this)">CLASS: ${cls.name.toUpperCase()}</div>
+            <ul class="trait-list">
+              ${cls.classTraits.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+            ${sub.specialRule ? `<div class="special-rule-box">⚡ ${sub.specialRule}</div>` : ''}
+          </div>
+
           <!-- DERIVED -->
           <div class="sheet-section">
             <div class="section-header">DERIVED STATS</div>
             <div class="derived-grid">
               <div class="derived-item">
                 <span class="derived-label">Max HP</span>
-                <span class="derived-value hp">${d.hp}</span>
+                <span class="derived-value">${d.hp}</span>
               </div>
               <div class="derived-item">
                 <span class="derived-label">Current HP</span>
@@ -2232,50 +2285,10 @@
             </div>
           </div>
 
-          <!-- RACE -->
-          <div class="sheet-section">
-            <div class="section-header">RACE: ${race.name.toUpperCase()}</div>
-            <ul class="trait-list">
-              ${race.traits.map(t => `<li>${t}</li>`).join('')}
-            </ul>
-            ${race.raceAbilities.length ? `
-              <div class="race-light-abilities">
-                ${race.raceAbilities.map(a => `
-                  <div class="race-ability">
-                    <span class="race-ability-name">⚡ ${a.name}</span>
-                    <span class="race-ability-desc">${a.description}</span>
-                  </div>`).join('')}
-              </div>`: ''}
-          </div>
-
         </div>
 
         <!-- RIGHT COLUMN -->
         <div class="sheet-col">
-
-          <!-- CLASS TRAITS -->
-          <div class="sheet-section">
-            <div class="section-header">CLASS: ${cls.name.toUpperCase()}</div>
-            <ul class="trait-list">
-              ${cls.classTraits.map(t => `<li>${t}</li>`).join('')}
-            </ul>
-            ${sub.specialRule ? `<div class="special-rule-box">⚡ ${sub.specialRule}</div>` : ''}
-          </div>
-
-          <!-- WEAPONS -->
-          <div class="sheet-section">
-            <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
-            <div class="gear-slots">
-              ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => `
-                <div class="gear-slot">
-                  <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
-                  <input type="text" class="slot-input"
-                         value="${esc(ch.weapons[i] || '')}" placeholder="Empty…"
-                         onchange="updateWeapon(${i},this.value)">
-                </div>
-              `).join('')}
-            </div>
-          </div>
 
           <!-- ARMOR -->
           <div class="sheet-section">
@@ -2290,6 +2303,21 @@
                   <input type="text" class="slot-input spare"
                          value="${esc(ch.armor[k + 'Spare'] || '')}" placeholder="Spare…"
                          onchange="updateArmor('${k}Spare',this.value)">
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          
+          <!-- WEAPONS -->
+          <div class="sheet-section">
+            <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
+            <div class="gear-slots">
+              ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => `
+                <div class="gear-slot">
+                  <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
+                  <input type="text" class="slot-input"
+                         value="${esc(ch.weapons[i] || '')}" placeholder="Empty…"
+                         onchange="updateWeapon(${i},this.value)">
                 </div>
               `).join('')}
             </div>
@@ -2480,6 +2508,9 @@
         function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
         function updateNotes(v) { const c = getActive(); if (!c) return; c.notes = v; save(); }
         function updateGlimmer(v) { const c = getActive(); if (!c) return; c.glimmer = Math.max(0, parseInt(v, 10) || 0); save(); }
+        function toggleSection(headerEl) {
+            headerEl.closest('.sheet-section').classList.toggle('collapsed');
+        }
         function updateCurrentHP(v) {
             const c = getActive(); if (!c) return;
             const d = derived(c);
