@@ -1334,6 +1334,32 @@
             gap: 10px;
         }
 
+        .grenade-use-btn {
+            margin-top: 5px;
+            width: 100%;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid var(--success);
+            background: rgba(34, 197, 94, .1);
+            color: var(--success);
+            font-size: .72rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            transition: all .15s;
+        }
+
+        .grenade-use-btn.used {
+            border-color: var(--danger);
+            background: rgba(239, 68, 68, .1);
+            color: var(--danger);
+        }
+
+        .grenade-slot-wrap.used .slot-select {
+            opacity: .45;
+        }
+
         .grenade-slots .gear-slot {
             flex: 1;
         }
@@ -1628,7 +1654,7 @@
                     breaker: 'Electric shockwave: creatures within 10ft of landing take 1d4 × LL electric damage.'
                 }
             }
-        };
+        }
 
         const SUBCLASSES = {
             dark: {
@@ -2355,16 +2381,21 @@
               `).join('')}
             </div>
             <div class="grenade-slots">
-              ${[1, 2].map(slot => `
-                <div class="gear-slot">
+              ${[1, 2].map(slot => {
+                const used = slot === 1 ? !!ch.grenadeUsed1 : !!ch.grenadeUsed2;
+                return `
+                <div class="gear-slot grenade-slot-wrap ${used ? 'used' : ''}">
                   <span class="slot-label">Slot ${slot}</span>
                   <select class="slot-select" onchange="updateGrenade(${slot},this.value)">
                     ${cls.grenadeOptions.map(g => `
                       <option value="${g}" ${(slot === 1 ? ch.grenadeSlot1 : ch.grenadeSlot2) === g ? 'selected' : ''}>${g}</option>
                     `).join('')}
                   </select>
+                  <button class="grenade-use-btn ${used ? 'used' : ''}" onclick="toggleGrenadeUsed(${slot})">
+                    ${used ? '✗ Used' : '✓ Available'}
+                  </button>
                 </div>
-              `).join('')}
+              `}).join('')}
             </div>
           </div>
 
@@ -2383,8 +2414,8 @@
             <div class="section-header">⚡ LIGHT ABILITIES — ${sub.name} (LL ${ch.lightLevel})</div>
             <div class="ability-grid">
               ${sub.abilities.map(a => {
-                const known = ch.selectedAbilities.includes(a.id);
-                return `
+                    const known = ch.selectedAbilities.includes(a.id);
+                    return `
                   <div class="ability-card ${known ? 'unlocked' : 'locked'}">
                     <div class="ability-card-header">
                       <span class="ability-type-badge ${a.type}">${a.type}</span>
@@ -2394,7 +2425,7 @@
                     ${known ? `<div class="ability-card-desc">${a.description.replace(/\n/g, '<br>')}</div>` : ''}
                   </div>
                 `;
-            }).join('')}
+                }).join('')}
             </div>
           </div>
 
@@ -2511,6 +2542,7 @@
                 armor: { helmet: '', helmetSpare: '', chest: '', chestSpare: '', boots: '', bootsSpare: '' },
                 grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
                 grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
+                grenadeUsed1: false, grenadeUsed2: false,
                 notes: '', glimmer: 0, currentHP: null
             };
             for (const [k, v] of Object.entries(dr.statPoints)) ch.stats[k] += v;
@@ -2529,6 +2561,12 @@
         function updateWeapon(i, v) { const c = getActive(); if (!c) return; c.weapons[i] = v; save(); }
         function updateArmor(k, v) { const c = getActive(); if (!c) return; c.armor[k] = v; save(); }
         function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
+        function toggleGrenadeUsed(slot) {
+            const c = getActive(); if (!c) return;
+            if (slot === 1) c.grenadeUsed1 = !c.grenadeUsed1;
+            else c.grenadeUsed2 = !c.grenadeUsed2;
+            save(); render();
+        }
         function updateNotes(v) { const c = getActive(); if (!c) return; c.notes = v; save(); }
         function updateGlimmer(v) { const c = getActive(); if (!c) return; c.glimmer = Math.max(0, parseInt(v, 10) || 0); save(); }
         function toggleSection(headerEl) {
