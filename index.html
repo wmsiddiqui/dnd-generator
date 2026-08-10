@@ -2288,6 +2288,14 @@
                        onchange="updateCurrentHP(this.value)">
               </div>
               <div class="derived-item">
+                <span class="derived-label">Revives</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <button class="stat-btn" onclick="adjustRevives(-1)" ${(ch.revives ?? ch.lightLevel) <= 0 ? 'disabled' : ''}>−</button>
+                  <span class="derived-value" style="min-width:24px;text-align:center">${ch.revives ?? ch.lightLevel}</span>
+                  <button class="stat-btn" onclick="adjustRevives(1)">+</button>
+                </div>
+              </div>
+              <div class="derived-item">
                 <span class="derived-label">Speed</span>
                 <span class="derived-value">${d.totalSpd} ft</span>
               </div>
@@ -2317,6 +2325,7 @@
                 <span class="derived-value small">1d6 per 10ft${ch.class === 'hunter' ? ' (½ with roll)' : ch.class === 'warlock' ? ' (glide)' : ''}</span>
               </div>
             </div>
+            <button class="btn btn-secondary" onclick="openLongRestConfirm()" style="margin-top:10px;width:100%;border-color:var(--success);color:var(--success)">Long Rest</button>
           </div>
 
           <!-- COMBAT ACTIONS -->
@@ -2556,7 +2565,7 @@
                 grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
                 grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
                 grenadeUsed1: false, grenadeUsed2: false,
-                notes: '', glimmer: 0, currentHP: null
+                notes: '', glimmer: 0, currentHP: null, revives: dr.startingLL
             };
             for (const [k, v] of Object.entries(dr.statPoints)) ch.stats[k] += v;
             ch.currentHP = ch.stats.health * CLASSES[ch.class].healthConversion;
@@ -2590,6 +2599,41 @@
             const d = derived(c);
             c.currentHP = Math.max(0, Math.min(d.hp, parseInt(v) || 0));
             save();
+        }
+
+        function adjustRevives(delta) {
+            const c = getActive(); if (!c) return;
+            const cur = c.revives ?? c.lightLevel;
+            c.revives = Math.max(0, cur + delta);
+            save(); render();
+        }
+
+        function openLongRestConfirm() {
+            showModal(`
+    <div class="levelup-modal">
+      <h3>Long Rest</h3>
+      <p>Taking a long rest will:</p>
+      <ul style="color:var(--text-muted);font-size:.85rem;padding-left:1.2em;margin-bottom:16px;line-height:1.8">
+        <li>Restore Current HP to maximum</li>
+        <li>Replenish both grenades</li>
+        <li>Reset Revives to Light Level</li>
+      </ul>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:2;background:var(--success);border-color:var(--success)" onclick="doLongRest()">Confirm Long Rest</button>
+      </div>
+    </div>
+  `);
+        }
+
+        function doLongRest() {
+            const c = getActive(); if (!c) return;
+            const d = derived(c);
+            c.grenadeUsed1 = false;
+            c.grenadeUsed2 = false;
+            c.currentHP = d.hp;
+            c.revives = c.lightLevel;
+            save(); closeModal(); render();
         }
 
         /* ==========================================================
