@@ -1805,6 +1805,14 @@
             'Grapple': '1d2 × LL. Roll strength check to root an enemy with your own hands. May attempt to have 1 free hand for other actions if rolling at disadvantage.'
         };
 
+        const SPECIAL_ABILITIES = [
+            { id: 'touch_of_corruption', name: 'Touch of Corruption', type: 'ability', description: 'Imbue a non-paracausal entity with Darkness. It becomes suggestive to your commands.' },
+            { id: 'drain', name: 'Drain', type: 'ability', description: 'Touch something imbued with Light. Heal for 1d6 × LL and deal 1d6 × LL damage to it.' },
+            { id: 'dark_void', name: 'Dark Void', type: 'ability', description: 'The Darkness becomes a mist around you. Teleport up to 10ft in any visible direction.' },
+            { id: 'levels_of_darkness', name: 'Levels of Darkness', type: 'ability', description: 'If your Character Level is above 10, increase it by 3 for this turn. If it is below 10, treat it as 10 for this turn.' },
+            { id: 'dark_melee', name: 'Dark Melee', type: 'melee', description: 'For each creature with Light powers you can see within 20ft × LL, increase this attack by 1d2.' }
+        ];
+
         /* ==========================================================
            APP STATE
         ========================================================== */
@@ -2429,11 +2437,24 @@
                 <div class="melee-item"><strong>${m}:</strong> ${MELEE_DESCS[m]}</div>
               `).join('')}
             </div>
+            ${(ch.specialAbilities ?? []).some(sid => { const sa = SPECIAL_ABILITIES.find(x => x.id === sid); return sa && sa.type === 'melee'; }) ? `
+              <div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
+                <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);opacity:.7;margin-bottom:6px">— Special —</div>
+                ${(ch.specialAbilities ?? []).map(sid => {
+                  const sa = SPECIAL_ABILITIES.find(x => x.id === sid);
+                  if (!sa || sa.type !== 'melee') return '';
+                  return `<div class="melee-item" style="color:var(--gold);display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><span><strong>${sa.name}:</strong> <span style="color:var(--text-muted)">${sa.description}</span></span><button onclick="revokeSpecialAbility('${sa.id}')" style="background:transparent;border:none;color:var(--text-dim);font-size:.8rem;cursor:pointer;flex-shrink:0;padding:0 2px" title="Remove">\u00d7</button></div>`;
+                }).join('')}
+              </div>
+            ` : ''}
           </div>
 
           <!-- LIGHT ABILITIES -->
           <div class="sheet-section">
-            <div class="section-header">⚡ LIGHT ABILITIES — ${sub.name} (LL ${ch.lightLevel})</div>
+            <div class="section-header" style="display:flex;justify-content:space-between;align-items:center">
+              <span>⚡ LIGHT ABILITIES — ${sub.name} (LL ${ch.lightLevel})</span>
+              <button onclick="openGrantSpecialAbility()" style="background:transparent;border:1px solid var(--border2);border-radius:4px;color:var(--gold);font-size:.65rem;font-weight:700;padding:2px 8px;cursor:pointer;flex-shrink:0">+ Special</button>
+            </div>
             <div class="ability-grid">
               ${sub.abilities.map(a => {
                     const known = ch.selectedAbilities.includes(a.id);
@@ -2449,6 +2470,27 @@
                 `;
                 }).join('')}
             </div>
+            ${(ch.specialAbilities ?? []).filter(sid => { const sa = SPECIAL_ABILITIES.find(x => x.id === sid); return sa && sa.type !== 'melee'; }).length > 0 ? `
+              <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+                <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);opacity:.7;margin-bottom:6px">— Special —</div>
+                <div class="ability-grid">
+                  ${(ch.specialAbilities ?? []).filter(sid => { const sa = SPECIAL_ABILITIES.find(x => x.id === sid); return sa && sa.type !== 'melee'; }).map(sid => {
+                    const sa = SPECIAL_ABILITIES.find(x => x.id === sid);
+                    if (!sa) return '';
+                    return `
+                      <div class="ability-card unlocked" style="border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.04)">
+                        <div class="ability-card-header">
+                          <span class="ability-type-badge ${sa.type}">${sa.type}</span>
+                          <span class="ability-card-name">${sa.name}</span>
+                          <button onclick="revokeSpecialAbility('${sa.id}')" style="background:transparent;border:none;color:var(--text-dim);font-size:.75rem;cursor:pointer;padding:0 2px" title="Remove">×</button>
+                        </div>
+                        <div class="ability-card-desc">${sa.description}</div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            ` : ''}
           </div>
 
           <!-- SUPER -->
@@ -2565,7 +2607,7 @@
                 grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
                 grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
                 grenadeUsed1: false, grenadeUsed2: false,
-                notes: '', glimmer: 0, currentHP: null, revives: dr.startingLL
+                notes: '', glimmer: 0, currentHP: null, revives: dr.startingLL, specialAbilities: []
             };
             for (const [k, v] of Object.entries(dr.statPoints)) ch.stats[k] += v;
             ch.currentHP = ch.stats.health * CLASSES[ch.class].healthConversion;
@@ -2849,6 +2891,47 @@
         }
 
         function closeModalAndRender() { closeModal(); render(); }
+
+        function openGrantSpecialAbility() {
+            const ch = getActive(); if (!ch) return;
+            const granted = ch.specialAbilities ?? [];
+            const available = SPECIAL_ABILITIES.filter(a => !granted.includes(a.id));
+            if (available.length === 0) {
+                showModal(`<div class="levelup-modal"><h3>All Special Abilities Granted</h3><p>This guardian already has every special ability.</p><button class="btn btn-outline" onclick="closeModal()">Close</button></div>`);
+                return;
+            }
+            showModal(`
+    <div class="levelup-modal ability-unlock-modal">
+      <h3>Grant Special Ability</h3>
+      <p>Select an ability to grant to ${esc(ch.name)}:</p>
+      <div class="ability-selection-grid">
+        ${available.map(a => `
+          <div class="ability-select-card" onclick="grantSpecialAbility('${a.id}')" style="border-color:rgba(245,158,11,.25)">
+            <div class="ability-select-header">
+              <span class="ability-type-badge ${a.type}">${a.type}</span>
+              <span class="ability-select-name">${a.name}</span>
+            </div>
+            <div class="ability-select-desc">${a.description}</div>
+          </div>
+        `).join('')}
+      </div>
+      <button class="btn btn-outline" style="margin-top:12px" onclick="closeModal()">Cancel</button>
+    </div>
+  `);
+        }
+
+        function grantSpecialAbility(id) {
+            const ch = getActive(); if (!ch) return;
+            if (!ch.specialAbilities) ch.specialAbilities = [];
+            if (!ch.specialAbilities.includes(id)) ch.specialAbilities.push(id);
+            save(); closeModal(); render();
+        }
+
+        function revokeSpecialAbility(id) {
+            const ch = getActive(); if (!ch) return;
+            ch.specialAbilities = (ch.specialAbilities ?? []).filter(x => x !== id);
+            save(); render();
+        }
 
         /* ==========================================================
            EXPORT / IMPORT
