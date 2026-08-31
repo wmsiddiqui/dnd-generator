@@ -1290,13 +1290,26 @@
         .armor-grid {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
+        }
+
+        .armor-piece {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
         .armor-row {
             display: flex;
             align-items: center;
             gap: 8px;
+        }
+
+        .armor-spare-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-left: 58px;
         }
 
         .armor-label {
@@ -1307,8 +1320,29 @@
             flex-shrink: 0;
         }
 
-        .armor-row .slot-input {
+        .armor-spare-label {
+            font-size: .72rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .armor-row .slot-input,
+        .armor-spare-row .slot-input {
             flex: 1;
+        }
+
+        .armor-rating {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .armor-rating-val {
+            font-size: .9rem;
+            font-weight: 700;
+            min-width: 22px;
+            text-align: center;
         }
 
         /* GRENADES */
@@ -1463,6 +1497,83 @@
             border-radius: 4px;
             padding: 6px 8px;
             color: var(--gold);
+        }
+
+        .super-activate-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            gap: 10px;
+        }
+
+        .super-charges {
+            font-size: .8rem;
+            color: var(--text-muted);
+        }
+
+        .super-charges strong {
+            color: var(--text-primary);
+        }
+
+        .btn-super-activate {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid rgba(245, 158, 11, .5);
+            background: rgba(245, 158, 11, .12);
+            color: var(--gold);
+            transition: background .15s;
+        }
+
+        .btn-super-activate:hover:not(:disabled) {
+            background: rgba(245, 158, 11, .25);
+        }
+
+        .btn-super-activate:disabled {
+            opacity: .4;
+            cursor: not-allowed;
+        }
+
+        .btn-super-deactivate {
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1px solid rgba(239, 68, 68, .5);
+            background: rgba(239, 68, 68, .12);
+            color: #f87171;
+            transition: background .15s;
+        }
+
+        .btn-super-deactivate:hover {
+            background: rgba(239, 68, 68, .25);
+        }
+
+        .super-active-indicator {
+            display: inline-block;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .04em;
+            color: var(--gold);
+            background: rgba(245, 158, 11, .15);
+            border: 1px solid rgba(245, 158, 11, .4);
+            border-radius: 4px;
+            padding: 2px 7px;
+            animation: pulse-gold .9s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse-gold {
+            from {
+                opacity: .7;
+            }
+
+            to {
+                opacity: 1;
+            }
         }
 
         /* =========================================================
@@ -1845,31 +1956,47 @@
             if (race.speedBonus) baseSpd += race.speedBonus;
             if (cls.speedBonus) baseSpd += cls.speedBonus;
             if (sub.id === 'breaker') baseSpd += 20;
-            const totalSpd = baseSpd + Math.floor(ch.stats.speed / 2) * 5;
+            let totalSpd = baseSpd + Math.floor(ch.stats.speed / 2) * 5;
 
             const atkBonus = Math.floor(ch.stats.agility / 2);
             const wepDmgBonus = Math.floor(ch.stats.strength / 3);
             const ltDmgBonus = Math.floor(ch.stats.wisdom / 3);
 
-            let staminaTier = 'Base';
-            if (ch.stats.stamina >= 20) staminaTier = 'Tier 3 — 2 turns back-to-back';
-            else if (ch.stats.stamina >= 16) staminaTier = 'Tier 2 — extra Major/Light action';
-            else if (ch.stats.stamina >= 8) staminaTier = 'Tier 1 — extra Bonus action';
-
             const chaosCharges = sub.id === 'chaos' ? 2 * ch.lightLevel : null;
 
-            const lightActions = ch.class === 'warlock' ? 2 : 1;
-            const majorActions = sub.id === 'breaker' ? 2 : 1;
-            const bonusActions = 1 + (ch.stats.stamina >= 8 ? 1 : 0);
-            // Tier 2 (16+): +1 Major OR Light (player's choice) — shown as a note
-            // Tier 3 (20): 2 turns back-to-back — shown as a note
-            const staminaActionNote = ch.stats.stamina >= 20
-                ? '2 turns back-to-back'
+            let lightActions = ch.class === 'warlock' ? 2 : 1;
+            let majorActions = sub.id === 'breaker' ? 2 : 1;
+            let bonusActions = 1 + (ch.stats.stamina >= 8 ? 1 : 0);
+            let staminaActionNote = ch.stats.stamina >= 20
+                ? '+1 Major or Light · 2 turns back-to-back'
                 : ch.stats.stamina >= 16
                     ? '+1 Major or Light'
                     : null;
 
-            return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, staminaTier, chaosCharges, lightActions, majorActions, bonusActions, staminaActionNote };
+            const superBoosts = new Set();
+            if (ch.superActive) {
+                if (ch.class === 'warlock') {
+                    totalSpd *= 2;
+                    superBoosts.add('totalSpd');
+                    lightActions += 2;
+                    superBoosts.add('lightActions');
+                } else if (ch.class === 'hunter') {
+                    const effStam = ch.stats.stamina * 2;
+                    const newBonus = 1 + (effStam >= 8 ? 1 : 0);
+                    if (newBonus !== bonusActions) { bonusActions = newBonus; superBoosts.add('bonusActions'); }
+                    const newNote = effStam >= 20
+                        ? '+1 Major or Light · 2 turns back-to-back'
+                        : effStam >= 16 ? '+1 Major or Light' : null;
+                    if (newNote !== staminaActionNote) { staminaActionNote = newNote; superBoosts.add('staminaActionNote'); }
+                }
+                // Titan: per-charge leap — no persistent stat changes
+            }
+
+            const armorRating = ['helmet', 'chest', 'boots'].reduce((sum, k) => {
+                return ch.armor[k] ? sum + (parseInt(ch.armor[k + 'Val']) || 0) : sum;
+            }, 0);
+
+            return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, chaosCharges, lightActions, majorActions, bonusActions, staminaActionNote, armorRating, superBoosts };
         }
 
         function ptsPerLevel(ch) { return ch.subclass === 'breaker' ? 6 : 3; }
@@ -1945,7 +2072,6 @@
         </div>
         <div class="char-card-levels">
           <span class="level-badge">LL ${c.lightLevel}</span>
-          <span class="level-badge">CL ${c.characterLevel}</span>
         </div>
       </div>
       <div class="char-card-stats">
@@ -2232,7 +2358,6 @@
           <span class="meta-badge class" style="background:${cls.color}18;border-color:${cls.color}55;color:${cls.color}">${cls.name}</span>
           <span class="meta-badge sub">${sub.name}</span>
           <span class="meta-badge ll">LL ${ch.lightLevel}</span>
-          <span class="meta-badge cl">CL ${ch.characterLevel}</span>
         </div>
       </div>
 
@@ -2295,6 +2420,21 @@
                        value="${ch.currentHP ?? d.hp}"
                        onchange="updateCurrentHP(this.value)">
               </div>
+              ${(ch.overshield || 0) > 0 ? `
+              <div class="derived-item" style="background:rgba(59,130,246,.07);border-radius:4px;padding:4px 6px;border:1px solid rgba(59,130,246,.25)">
+                <span class="derived-label" style="color:var(--accent)">🛡 Overshield</span>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <button class="stat-btn" onclick="adjustOvershield(-1)" ${ch.overshield <= 0 ? 'disabled' : ''}>−</button>
+                  <input type="number" class="hp-input" min="0" style="border-color:rgba(59,130,246,.4)"
+                         value="${ch.overshield || 0}"
+                         onchange="setOvershield(this.value)">
+                  <button class="stat-btn" onclick="adjustOvershield(1)">+</button>
+                </div>
+              </div>` : `
+              <div class="derived-item">
+                <span class="derived-label" style="color:var(--text-dim)">🛡 Overshield</span>
+                <button class="btn btn-sm btn-outline" style="font-size:.72rem;padding:3px 10px" onclick="adjustOvershield(1)">+ Add</button>
+              </div>`}
               <div class="derived-item">
                 <span class="derived-label">Revives</span>
                 <div style="display:flex;align-items:center;gap:6px">
@@ -2303,9 +2443,9 @@
                   <button class="stat-btn" onclick="adjustRevives(1)">+</button>
                 </div>
               </div>
-              <div class="derived-item">
-                <span class="derived-label">Speed</span>
-                <span class="derived-value">${d.totalSpd} ft</span>
+              <div class="derived-item" ${d.superBoosts.has('totalSpd') ? 'style="background:rgba(245,158,11,.07);border-radius:4px;padding:4px 6px;border:1px solid rgba(245,158,11,.2)"' : ''}>
+                <span class="derived-label" ${d.superBoosts.has('totalSpd') ? 'style="color:var(--gold)"' : ''}>Speed${d.superBoosts.has('totalSpd') ? ' ⚡×2' : ''}</span>
+                <span class="derived-value" ${d.superBoosts.has('totalSpd') ? 'style="color:var(--gold)"' : ''}>${d.totalSpd} ft</span>
               </div>
               <div class="derived-item">
                 <span class="derived-label">Attack Bonus</span>
@@ -2319,15 +2459,16 @@
                 <span class="derived-label">Light Dmg Bonus</span>
                 <span class="derived-value">+${d.ltDmgBonus}</span>
               </div>
-              <div class="derived-item">
-                <span class="derived-label">Stamina Tier</span>
-                <span class="derived-value small">${d.staminaTier}</span>
-              </div>
               ${d.chaosCharges !== null ? `
                 <div class="derived-item">
                   <span class="derived-label">Chaos Charges</span>
                   <span class="derived-value">${d.chaosCharges}</span>
                 </div>`: ''}
+              ${d.armorRating > 0 ? `
+              <div class="derived-item">
+                <span class="derived-label">Armor Rating</span>
+                <span class="derived-value">${d.armorRating}</span>
+              </div>` : ''}
               <div class="derived-item">
                 <span class="derived-label">Fall Damage</span>
                 <span class="derived-value small">1d6 per 10ft${ch.class === 'hunter' ? ' (½ with roll)' : ch.class === 'warlock' ? ' (glide)' : ''}</span>
@@ -2340,26 +2481,41 @@
           <div class="sheet-section">
             <div class="section-header">COMBAT ACTIONS</div>
             <div class="action-list">
-              <div class="action-item">
-                <span class="action-label light">⚡ Light Actions</span>
-                <span class="action-val">${d.lightActions}</span>
+              <div class="action-item" ${d.superBoosts.has('lightActions') ? 'style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)"' : ''}>
+                <span class="action-label light" ${d.superBoosts.has('lightActions') ? 'style="color:var(--gold)"' : ''}>⚡ Light Actions${d.superBoosts.has('lightActions') ? ' +2' : ''}</span>
+                <span class="action-val" ${d.superBoosts.has('lightActions') ? 'style="color:var(--gold)"' : ''}>${d.lightActions}</span>
               </div>
               <div class="action-item">
                 <span class="action-label major">⚔ Major Actions</span>
                 <span class="action-val">${d.majorActions}</span>
               </div>
-              <div class="action-item">
-                <span class="action-label bonus">✦ Bonus Action${d.bonusActions > 1 ? 's' : ''}</span>
-                <span class="action-val">${d.bonusActions}${d.bonusActions > 1 ? ' <span style="font-size:.7rem;color:var(--text-muted);font-weight:400">(Stamina)</span>' : ''}</span>
+              <div class="action-item" ${d.superBoosts.has('bonusActions') ? 'style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)"' : ''}>
+                <span class="action-label bonus" ${d.superBoosts.has('bonusActions') ? 'style="color:var(--gold)"' : ''}>✦ Bonus Action${d.bonusActions > 1 ? 's' : ''}</span>
+                <span class="action-val" ${d.superBoosts.has('bonusActions') ? 'style="color:var(--gold)"' : ''}>${d.bonusActions}${d.bonusActions > 1 ? ' <span style="font-size:.7rem;color:var(--text-muted);font-weight:400">(Stamina)</span>' : ''}</span>
               </div>
               ${d.staminaActionNote ? `
-              <div class="action-item" style="background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.2)">
-                <span class="action-label" style="color:var(--success)">✦ Stamina Bonus</span>
-                <span class="action-val" style="font-size:.8rem;color:var(--success)">${d.staminaActionNote}</span>
+              <div class="action-item" style="background:rgba(${d.superBoosts.has('staminaActionNote') ? '245,158,11' : '34,197,94'},.07);border:1px solid rgba(${d.superBoosts.has('staminaActionNote') ? '245,158,11' : '34,197,94'},.2)">
+                <span class="action-label" style="color:var(${d.superBoosts.has('staminaActionNote') ? '--gold' : '--success'})">✦ Stamina Bonus</span>
+                <span class="action-val" style="font-size:.8rem;color:var(${d.superBoosts.has('staminaActionNote') ? '--gold' : '--success'})">${d.staminaActionNote}</span>
               </div>` : ''}
-              <div class="action-item">
-                <span class="action-label move">↦ Movement</span>
-                <span class="action-val">${d.totalSpd} ft</span>
+              ${ch.superActive && ch.class === 'warlock' ? `
+              <div class="action-item" style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)">
+                <span class="action-label" style="color:var(--gold)">⚡ Super</span>
+                <span class="action-val" style="font-size:.75rem;color:var(--gold)">No physical weapons · ends on damage / lost concentration</span>
+              </div>` : ''}
+              ${ch.superActive && ch.class === 'hunter' ? `
+              <div class="action-item" style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)">
+                <span class="action-label" style="color:var(--gold)">⚡ Super</span>
+                <span class="action-val" style="font-size:.75rem;color:var(--gold)">Stamina ×2 · reallocate pts over 20</span>
+              </div>` : ''}
+              ${ch.superActive && ch.class === 'titan' ? `
+              <div class="action-item" style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)">
+                <span class="action-label" style="color:var(--gold)">⚡ Super Leap</span>
+                <span class="action-val" style="font-size:.75rem;color:var(--gold)">30ft any direction · no speed cost · subclass effect on land</span>
+              </div>` : ''}
+              <div class="action-item" ${d.superBoosts.has('totalSpd') ? 'style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2)"' : ''}>
+                <span class="action-label move" ${d.superBoosts.has('totalSpd') ? 'style="color:var(--gold)"' : ''}>↦ Movement</span>
+                <span class="action-val" ${d.superBoosts.has('totalSpd') ? 'style="color:var(--gold)"' : ''}>${d.totalSpd} ft</span>
               </div>
             </div>
           </div>
@@ -2374,14 +2530,32 @@
             <div class="section-header">ARMOR (Helmet · Chest · Boots)</div>
             <div class="armor-grid">
               ${[['helmet', 'Helmet'], ['chest', 'Chest'], ['boots', 'Boots']].map(([k, lbl]) => `
-                <div class="armor-row">
-                  <span class="armor-label">${lbl}</span>
-                  <input type="text" class="slot-input"
-                         value="${esc(ch.armor[k] || '')}" placeholder="Equipped…"
-                         onchange="updateArmor('${k}',this.value)">
-                  <input type="text" class="slot-input spare"
-                         value="${esc(ch.armor[k + 'Spare'] || '')}" placeholder="Spare…"
-                         onchange="updateArmor('${k}Spare',this.value)">
+                <div class="armor-piece">
+                  <div class="armor-row">
+                    <span class="armor-label">${lbl}</span>
+                    <input type="text" class="slot-input"
+                           value="${esc(ch.armor[k] || '')}" placeholder="Equipped…"
+                           onchange="updateArmor('${k}',this.value)">
+                    ${ch.armor[k] ? `
+                    <div class="armor-rating">
+                      <button class="stat-btn" onclick="adjArmorVal('${k}',-1)">−</button>
+                      <span class="armor-rating-val">${parseInt(ch.armor[k + 'Val']) || 0}</span>
+                      <button class="stat-btn" onclick="adjArmorVal('${k}',1)">+</button>
+                    </div>` : ''}
+                  </div>
+                  ${ch.armor[k] ? `
+                  <div class="armor-spare-row">
+                    <span class="armor-spare-label">Spare</span>
+                    <input type="text" class="slot-input"
+                           value="${esc(ch.armor[k + 'Spare'] || '')}" placeholder="Spare…"
+                           onchange="updateArmor('${k}Spare',this.value)">
+                    ${ch.armor[k + 'Spare'] ? `
+                    <div class="armor-rating">
+                      <button class="stat-btn" onclick="adjArmorVal('${k}Spare',-1)">−</button>
+                      <span class="armor-rating-val">${parseInt(ch.armor[k + 'SpareVal']) || 0}</span>
+                      <button class="stat-btn" onclick="adjArmorVal('${k}Spare',1)">+</button>
+                    </div>` : ''}
+                  </div>` : ''}
                 </div>
               `).join('')}
             </div>
@@ -2441,9 +2615,9 @@
               <div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
                 <div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);opacity:.7;margin-bottom:6px">— Special —</div>
                 ${(ch.specialAbilities ?? []).map(sid => {
-                  const sa = SPECIAL_ABILITIES.find(x => x.id === sid);
-                  if (!sa || sa.type !== 'melee') return '';
-                  return `<div class="melee-item" style="color:var(--gold);display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><span><strong>${sa.name}:</strong> <span style="color:var(--text-muted)">${sa.description}</span></span><button onclick="revokeSpecialAbility('${sa.id}')" style="background:transparent;border:none;color:var(--text-dim);font-size:.8rem;cursor:pointer;flex-shrink:0;padding:0 2px" title="Remove">\u00d7</button></div>`;
+                    const sa = SPECIAL_ABILITIES.find(x => x.id === sid);
+                    if (!sa || sa.type !== 'melee') return '';
+                    return `<div class="melee-item" style="color:var(--gold);display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><span><strong>${sa.name}:</strong> <span style="color:var(--text-muted)">${sa.description}</span></span><button onclick="revokeSpecialAbility('${sa.id}')" style="background:transparent;border:none;color:var(--text-dim);font-size:.8rem;cursor:pointer;flex-shrink:0;padding:0 2px" title="Remove">\u00d7</button></div>`;
                 }).join('')}
               </div>
             ` : ''}
@@ -2487,7 +2661,7 @@
                         <div class="ability-card-desc">${sa.description}</div>
                       </div>
                     `;
-                  }).join('')}
+                }).join('')}
                 </div>
               </div>
             ` : ''}
@@ -2498,13 +2672,23 @@
             <div class="section-header">
               ⚡ SUPER
               ${ch.lightLevel < 3 ? '(Unlocks at LL 3)' :
-                    `(${superCharges} charge${superCharges !== 1 ? 's' : ''} · resets on long rest)`}
+                    `(${superCharges - (ch.superChargesUsed || 0)} / ${superCharges} charge${superCharges !== 1 ? 's' : ''} · resets on long rest)`}
             </div>
             ${ch.lightLevel < 3 ?
                     `<div class="locked-content">🔒 Unlocks at Light Level 3</div>` :
                     `<div class="super-content">
                 <div class="super-base">${cls.superDescription}</div>
                 <div class="super-subclass"><strong>${sub.name} bonus:</strong> ${cls.superSubclassBonuses[ch.subclass]}</div>
+                <div class="super-activate-bar">
+                  <span class="super-charges">
+                    Charges: <strong>${superCharges - (ch.superChargesUsed || 0)}</strong> / ${superCharges}
+                    ${ch.superActive ? '&nbsp;<span class="super-active-indicator">ACTIVE</span>' : ''}
+                  </span>
+                  ${ch.superActive
+                        ? `<button class="btn-super-deactivate" onclick="deactivateSuper()">Deactivate</button>`
+                        : `<button class="btn-super-activate" onclick="activateSuper()" ${(ch.superChargesUsed || 0) >= superCharges ? 'disabled' : ''}>Activate</button>`
+                    }
+                </div>
                </div>`}
           </div>
 
@@ -2603,7 +2787,7 @@
                 stats: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 },
                 selectedAbilities: [...dr.selectedAbilities],
                 weapons: ['', '', ''],
-                armor: { helmet: '', helmetSpare: '', chest: '', chestSpare: '', boots: '', bootsSpare: '' },
+                armor: { helmet: '', helmetVal: 0, helmetSpare: '', chest: '', chestVal: 0, chestSpare: '', boots: '', bootsVal: 0, bootsSpare: '' },
                 grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
                 grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
                 grenadeUsed1: false, grenadeUsed2: false,
@@ -2623,7 +2807,8 @@
         function getActive() { return STATE.chars.find(c => c.id === STATE.activeId); }
 
         function updateWeapon(i, v) { const c = getActive(); if (!c) return; c.weapons[i] = v; save(); }
-        function updateArmor(k, v) { const c = getActive(); if (!c) return; c.armor[k] = v; save(); }
+        function updateArmor(k, v) { const c = getActive(); if (!c) return; c.armor[k] = v; save(); render(); }
+        function adjArmorVal(k, delta) { const c = getActive(); if (!c) return; c.armor[k + 'Val'] = Math.max(0, (parseInt(c.armor[k + 'Val']) || 0) + delta); save(); render(); }
         function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
         function toggleGrenadeUsed(slot) {
             const c = getActive(); if (!c) return;
@@ -2643,10 +2828,41 @@
             save();
         }
 
+        function adjustOvershield(delta) {
+            const c = getActive(); if (!c) return;
+            c.overshield = Math.max(0, (c.overshield || 0) + delta);
+            save(); render();
+        }
+
+        function setOvershield(v) {
+            const c = getActive(); if (!c) return;
+            c.overshield = Math.max(0, parseInt(v) || 0);
+            save(); render();
+        }
+
         function adjustRevives(delta) {
             const c = getActive(); if (!c) return;
             const cur = c.revives ?? c.lightLevel;
             c.revives = Math.max(0, cur + delta);
+            save(); render();
+        }
+
+        function activateSuper() {
+            const c = getActive(); if (!c) return;
+            const charges = Math.max(0, c.lightLevel - 2);
+            if ((c.superChargesUsed || 0) >= charges) return;
+            c.superChargesUsed = (c.superChargesUsed || 0) + 1;
+            if (c.class === 'warlock') {
+                const baseD = derived(c); // before superActive=true, uses base stats
+                c.overshield = c.currentHP ?? baseD.hp;
+            }
+            c.superActive = true;
+            save(); render();
+        }
+
+        function deactivateSuper() {
+            const c = getActive(); if (!c) return;
+            c.superActive = false;
             save(); render();
         }
 
@@ -2659,6 +2875,7 @@
         <li>Restore Current HP to maximum</li>
         <li>Replenish both grenades</li>
         <li>Reset Revives to Light Level</li>
+        <li>Restore all Super charges</li>
       </ul>
       <div style="display:flex;gap:10px">
         <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
@@ -2675,6 +2892,8 @@
             c.grenadeUsed2 = false;
             c.currentHP = d.hp;
             c.revives = c.lightLevel;
+            c.superChargesUsed = 0;
+            c.superActive = false;
             save(); closeModal(); render();
         }
 
@@ -2686,18 +2905,15 @@
             showModal(`
     <div class="levelup-modal">
       <h3>Add Character Points — ${esc(ch.name)}</h3>
-      <p>Each character point grants <strong>3 stat points</strong> to allocate.</p>
+      <p>Each character point grants <strong>1 stat point</strong> to allocate.</p>
       <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin:18px 0">
         <button class="stat-btn" onclick="adjCPInput(-1)">−</button>
         <span id="cp-input-val" style="font-size:1.6rem;font-weight:700;min-width:2rem;text-align:center">1</span>
         <button class="stat-btn" onclick="adjCPInput(1)">+</button>
       </div>
-      <p style="color:var(--text-muted);font-size:.85rem;text-align:center">
-        = <span id="cp-stat-preview">3</span> stat points to allocate
-      </p>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" style="flex:2" onclick="doAddCharacterPoints()">Allocate Points</button>
+        <button class="btn btn-primary" style="flex:2" onclick="doAddCharacterPoints()">Add CP</button>
       </div>
     </div>
   `);
@@ -2707,15 +2923,13 @@
         function adjCPInput(delta) {
             window._cpCount = Math.max(1, (window._cpCount || 1) + delta);
             const el = document.getElementById('cp-input-val');
-            const pr = document.getElementById('cp-stat-preview');
             if (el) el.textContent = window._cpCount;
-            if (pr) pr.textContent = window._cpCount * 3;
         }
 
         function doAddCharacterPoints() {
             const ch = getActive(); if (!ch) return;
             const count = window._cpCount || 1;
-            const pts = count * 3;
+            const pts = count;
             STATE.pendingLevelUp = {
                 charId: ch.id,
                 type: 'charpoints',
@@ -2738,7 +2952,7 @@
       <p>Choose which category to advance:</p>
       <div class="levelup-options">
         <button class="btn btn-primary" onclick="doLevelUp('character')" ${ch.characterLevel >= 20 ? 'disabled' : ''}>
-          Character Level (CL ${ch.characterLevel} → ${Math.min(20, ch.characterLevel + 1)})
+          Character Level
           <small>Gain ${ptsPerLevel(ch)} stat points to allocate</small>
         </button>
         <button class="btn btn-secondary" onclick="doLevelUp('light')" ${ch.lightLevel >= 5 ? 'disabled' : ''}>
@@ -2784,7 +2998,7 @@
 
             showModal(`
       <div class="levelup-modal">
-        <h3>${pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP (${pending.pointsTotal} pts)` : `Allocate Stat Points — CL ${ch.characterLevel} → ${pending.newLevel}`}</h3>
+        <h3>${pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP (${pending.pointsTotal} pts)` : `Allocate Stat Points — Level Up`}</h3>
         <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
           Distribute <strong>${pending.pointsTotal}</strong> point${pending.pointsTotal !== 1 ? 's' : ''}.
           Use − to undo any allocation before confirming.
