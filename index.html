@@ -1016,6 +1016,29 @@
             .sheet-body {
                 grid-template-columns: 1fr;
             }
+            .sheet-col {
+                min-width: 0;
+                width: 100%;
+            }
+            .sheet-section {
+                min-width: 0;
+            }
+            .gear-slot {
+                min-width: 0;
+            }
+            .slot-input,
+            .slot-select {
+                min-width: 0;
+            }
+            .weapon-dmg-row,
+            .weapon-dmg-summary {
+                min-width: 0;
+                width: 100%;
+            }
+            .armor-row,
+            .armor-spare-row {
+                min-width: 0;
+            }
         }
 
         .sheet-section {
@@ -1345,6 +1368,14 @@
             max-width: 100%;
         }
 
+        .weapon-dmg-summary {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
         .weapon-dmg-select {
             background: var(--surface2);
             border: 1px solid var(--border2);
@@ -1357,7 +1388,9 @@
             max-width: 80px;
         }
 
-        .weapon-dmg-select:focus { border-color: var(--accent); }
+        .weapon-dmg-select:focus {
+            border-color: var(--accent);
+        }
 
         .weapon-dmg-qty {
             display: flex;
@@ -1370,6 +1403,12 @@
             font-weight: 700;
             min-width: 18px;
             text-align: center;
+        }
+
+        .weapon-dmg-perll {
+            font-size: .72rem;
+            color: var(--text-muted);
+            white-space: nowrap;
         }
 
         .weapon-dmg-toggle {
@@ -1385,8 +1424,8 @@
         }
 
         .weapon-dmg-toggle.active {
-            border-color: rgba(245,158,11,.5);
-            background: rgba(245,158,11,.1);
+            border-color: rgba(245, 158, 11, .5);
+            background: rgba(245, 158, 11, .1);
             color: var(--gold);
         }
 
@@ -3014,36 +3053,54 @@
           <div class="sheet-section">
             <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
             <div class="gear-slots">
-              ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => {
-                const wd = (ch.weaponDmg || [])[i] || null;
-                const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
-                return `
-                <div class="gear-slot">
-                  <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
-                  <input type="text" class="slot-input"
-                         value="${esc(ch.weapons[i] || '')}" placeholder="Empty…"
-                         onchange="updateWeapon(${i},this.value)">
-                  ${ch.weapons[i] ? `
-                  <div class="weapon-dmg-row">
-                    <div class="weapon-dmg-qty">
-                      <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="adjWeaponDmgCount(${i},-1)">−</button>
-                      <span class="weapon-dmg-qty-val">${wd ? wd.count : 1}</span>
-                      <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="adjWeaponDmgCount(${i},1)">+</button>
-                    </div>
-                    <select class="weapon-dmg-select" onchange="updateWeaponDmg(${i},'die',this.value)">
-                      ${[4,6,8,10,12,20].map(d => `<option value="${d}" ${(wd && wd.die === d) || (!wd && d === 6) ? 'selected' : ''}>d${d}</option>`).join('')}
-                    </select>
-                    <button class="weapon-dmg-toggle ${wd && wd.llMult ? 'active' : ''}" onclick="updateWeaponDmg(${i},'llMult',${!(wd && wd.llMult)})">×LL</button>
-                    <select class="weapon-dmg-select" onchange="updateWeaponDmg(${i},'mod',this.value)">
-                      <option value="none"   ${!wd || wd.mod === 'none'     ? 'selected' : ''}>No mod</option>
-                      <option value="strength" ${wd && wd.mod === 'strength' ? 'selected' : ''}>+STR</option>
-                      <option value="wisdom"   ${wd && wd.mod === 'wisdom'   ? 'selected' : ''}>+WIS</option>
-                    </select>
-                    ${chip ? `<div style="margin-top:2px">${chip}</div>` : ''}
-                  </div>` : ''}
-                </div>
-              `;
-              }).join('')}
+                            ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => {
+                                const wd = (ch.weaponDmg || [])[i] || null;
+                                const llMode = wd ? (wd.llMode || (wd.llMult ? 'multiply' : 'none')) : 'none';
+                                const llBonus = wd ? (wd.llBonus || 1) : 1;
+                                const detailsOpen = !!(wd && wd.expanded);
+                                const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
+                                return `
+                                <div class="gear-slot">
+                                    <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
+                                    <input type="text" class="slot-input"
+                                                 value="${esc(ch.weapons[i] || '')}" placeholder="Empty…"
+                                                 onchange="updateWeapon(${i},this.value)">
+                                    ${ch.weapons[i] ? `
+                                    <div class="weapon-dmg-summary">
+                                        ${chip}
+                                        <button class="btn btn-sm btn-outline" onclick="toggleWeaponDmgDetails(${i})">${detailsOpen ? 'Hide Details' : 'Edit Damage'}</button>
+                                    </div>
+                                    ${detailsOpen ? `
+                                    <div class="weapon-dmg-row">
+                                        <div class="weapon-dmg-qty">
+                                            <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="adjWeaponDmgCount(${i},-1)">−</button>
+                                            <span class="weapon-dmg-qty-val">${wd ? wd.count : 1}</span>
+                                            <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="adjWeaponDmgCount(${i},1)">+</button>
+                                        </div>
+                                        <select class="weapon-dmg-select" onchange="updateWeaponDmg(${i},'die',this.value)">
+                                            ${[2, 3, 4, 6, 8, 10, 12, 20].map(d => `<option value="${d}" ${(wd && wd.die === d) || (!wd && d === 6) ? 'selected' : ''}>d${d}</option>`).join('')}
+                                        </select>
+                                        <select class="weapon-dmg-select" onchange="updateWeaponDmg(${i},'llMode',this.value)">
+                                            <option value="none"     ${llMode === 'none' ? 'selected' : ''}>No LL</option>
+                                            <option value="multiply" ${llMode === 'multiply' ? 'selected' : ''}>×LL</option>
+                                            <option value="add"      ${llMode === 'add' ? 'selected' : ''}>+n×LL</option>
+                                        </select>
+                                        ${llMode === 'add' ? `
+                                        <div class="weapon-dmg-qty">
+                                            <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="updateWeaponDmg(${i},'llBonus',${llBonus - 1})">−</button>
+                                            <span class="weapon-dmg-qty-val" style="min-width:14px">${llBonus}</span>
+                                            <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="updateWeaponDmg(${i},'llBonus',${llBonus + 1})">+</button>
+                                        </div>
+                                        <span class="weapon-dmg-perll">per LL</span>` : ''}
+                                        <select class="weapon-dmg-select" onchange="updateWeaponDmg(${i},'mod',this.value)">
+                                            <option value="none"     ${!wd || wd.mod === 'none' ? 'selected' : ''}>No mod</option>
+                                            <option value="strength" ${wd && wd.mod === 'strength' ? 'selected' : ''}>+STR</option>
+                                            <option value="wisdom"   ${wd && wd.mod === 'wisdom' ? 'selected' : ''}>+WIS</option>
+                                        </select>
+                                    </div>` : ''}` : ''}
+                                </div>
+                            `;
+                        }).join('')}
             </div>
           </div>
 
@@ -3319,9 +3376,16 @@
 
         function updateWeapon(i, v) { const c = getActive(); if (!c) return; c.weapons[i] = v; save(); render(); }
 
+        function toggleWeaponDmgDetails(i) {
+            const c = getActive(); if (!c) return;
+            const wd = ensureWeaponDmg(c, i);
+            wd.expanded = !wd.expanded;
+            save(); render();
+        }
+
         function ensureWeaponDmg(c, i) {
             if (!c.weaponDmg) c.weaponDmg = [null, null, null];
-            if (!c.weaponDmg[i]) c.weaponDmg[i] = { count: 1, die: 6, llMult: false, mod: 'none' };
+            if (!c.weaponDmg[i]) c.weaponDmg[i] = { count: 1, die: 6, llMode: 'none', llBonus: 1, mod: 'none', expanded: false };
             return c.weaponDmg[i];
         }
 
@@ -3336,19 +3400,25 @@
             const c = getActive(); if (!c) return;
             const wd = ensureWeaponDmg(c, i);
             if (field === 'die') wd.die = parseInt(value);
-            else if (field === 'llMult') wd.llMult = value === true || value === 'true';
+            else if (field === 'llMode') wd.llMode = value;
+            else if (field === 'llBonus') wd.llBonus = Math.max(1, parseInt(value) || 1);
+            else if (field === 'llMult') { wd.llMode = (value === true || value === 'true') ? 'multiply' : 'none'; } // backward compat
             else if (field === 'mod') wd.mod = value;
             save(); render();
         }
 
         function formatWeaponDamageChip(i, ch) {
-            const wd = (ch.weaponDmg || [])[i] || { count: 1, die: 6, llMult: false, mod: 'none' };
+            const wd = (ch.weaponDmg || [])[i] || { count: 1, die: 6, llMode: 'none', llBonus: 1, mod: 'none' };
+            const llMode = wd.llMode || (wd.llMult ? 'multiply' : 'none');
+            const llBonus = wd.llBonus || 1;
             const d = derived(ch);
             let mod = 0;
             if (wd.mod === 'strength') mod = d.wepDmgBonus;
             else if (wd.mod === 'wisdom') mod = d.ltDmgBonus;
             if ((ch.selectedAbilities || []).includes('damage_boost')) mod += 2;
-            let formula = `${wd.count}d${wd.die}${wd.llMult ? ' ×' + ch.lightLevel : ''}`;
+            let formula = `${wd.count}d${wd.die}`;
+            if (llMode === 'multiply') formula += ` ×${ch.lightLevel}`;
+            else if (llMode === 'add') formula += ` +${llBonus}×${ch.lightLevel}`;
             if (mod > 0) formula += ` +${mod}`;
             else if (mod < 0) formula += ` ${mod}`;
             return `<button class="dmg-chip dmg-chip-btn" onclick="openWeaponRollConfirm(${i},'${ch.id}')">🎲 ${formula}</button>`;
@@ -3372,6 +3442,8 @@
         function executeWeaponRoll(i, charId) {
             const ch = STATE.chars.find(c => c.id === charId); if (!ch) return;
             const wd = (ch.weaponDmg || [])[i]; if (!wd) return;
+            const llMode = wd.llMode || (wd.llMult ? 'multiply' : 'none');
+            const llBonus = wd.llBonus || 1;
             const d = derived(ch);
             let statMod = 0, statModName = '', statModDetail = '';
             if (wd.mod === 'strength') {
@@ -3384,17 +3456,19 @@
             if ((ch.selectedAbilities || []).includes('damage_boost')) {
                 statMod += 2; statModDetail += statModDetail ? ' +2 (Damage Boost)' : '+2 (Damage Boost)';
             }
+            const llAddBonus = llMode === 'add' ? llBonus * ch.lightLevel : 0;
             const dice = Array.from({ length: wd.count }, () => {
                 const v = rollDie(wd.die);
-                const result = wd.llMult ? v * ch.lightLevel : v;
-                return { sides: wd.die, value: v, multiplier: wd.llMult ? ch.lightLevel : null, result };
+                const multiplier = llMode === 'multiply' ? ch.lightLevel : null;
+                const result = multiplier ? v * multiplier : v;
+                return { sides: wd.die, value: v, multiplier, result };
             });
             const diceTotal = dice.reduce((s, x) => s + x.result, 0);
             const roll = {
                 attackCount: 1,
-                attacks: [{ dice, diceTotal, statMod, total: diceTotal + statMod }],
-                statMod, statModName, statModDetail,
-                grandTotal: diceTotal + statMod
+                attacks: [{ dice, diceTotal, llAddBonus, statMod, total: diceTotal + llAddBonus + statMod }],
+                statMod, statModName, statModDetail, llAddBonus,
+                grandTotal: diceTotal + llAddBonus + statMod
             };
             STATE._roll = roll;
             const name = ch.weapons[i] || `Weapon Slot ${i + 1}`;
@@ -3409,6 +3483,7 @@
             ${die.multiplier ? `<span class="die-mult">×${die.multiplier} (LL)</span>` : ''}
             <span class="die-result" id="rdr-0-${di}">${die.multiplier ? '= ?' : ''}</span>
           </div>`).join('')}
+        ${llAddBonus !== 0 ? `<div class="modifier-row"><span class="mod-value visible">${llAddBonus > 0 ? '+' : ''}${llAddBonus}</span><span style="color:var(--text-dim);font-size:.75rem">+${llBonus}×LL (LL=${ch.lightLevel})</span></div>` : ''}
         ${statMod !== 0 ? `<div class="modifier-row"><span class="mod-value" id="rdm-0">${statMod > 0 ? '+' : ''}${statMod}</span><span style="color:var(--text-dim);font-size:.75rem">${statModName} mod</span></div>` : ''}
       </div>
       <div class="roll-total-row">
@@ -3524,7 +3599,7 @@
         <div>
           <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Die</div>
           <select id="cr-die" class="slot-select" style="width:90px;font-size:1rem;font-weight:700;text-align:center">
-            ${[2,3,4,5,6,8,10,20].map(n => `<option value="${n}">d${n}</option>`).join('')}
+            ${[2, 3, 4, 5, 6, 8, 10, 20].map(n => `<option value="${n}">d${n}</option>`).join('')}
           </select>
         </div>
         <div>
@@ -3553,7 +3628,7 @@
 
         function executeCustomRoll() {
             const sides = parseInt(document.getElementById('cr-die')?.value || 6);
-            const qty   = window._crQty || 1;
+            const qty = window._crQty || 1;
             const rolls = Array.from({ length: qty }, () => rollDie(sides));
             const total = rolls.reduce((s, v) => s + v, 0);
 
