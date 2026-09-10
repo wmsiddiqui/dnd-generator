@@ -2407,6 +2407,19 @@
                         dice.push({ sides: ms, value: v, multiplier: mult, result: mult ? v * mult : v, fixed: false });
                     }
                 }
+                // Add melee passive bonuses
+                if (sourceType === 'melee') {
+                    const sel = ch.selectedAbilities || [];
+                    if (sel.includes('hone')) {
+                        const v = rollDie(6);
+                        dice.push({ sides: 6, value: v, multiplier: null, result: v, fixed: false, passive: 'hone' });
+                    }
+                    if (sel.includes('blademaster')) {
+                        const v = rollDie(3);
+                        const mult = ll;
+                        dice.push({ sides: 3, value: v, multiplier: mult, result: v * mult, fixed: false, passive: 'blademaster' });
+                    }
+                }
                 const diceTotal = dice.reduce((s, x) => s + x.result, 0);
                 attacks.push({ dice, diceTotal, statMod, total: diceTotal + statMod });
             }
@@ -2447,7 +2460,7 @@
             function buildAttackHtml(atk, ai) {
                 const diceRows = atk.dice.map((die, di) =>
                     `<div class="die-row">
-                      <span class="die-label">d${die.sides}</span>
+                      <span class="die-label">d${die.sides}${die.passive ? ` (${die.passive})` : ''}</span>
                       <span class="die-value" id="rdv-${ai}-${di}">?</span>
                       ${die.multiplier ? `<span class="die-mult">×${die.multiplier} (LL)</span>` : ''}
                       <span class="die-result" id="rdr-${ai}-${di}">${die.multiplier ? '= ?' : ''}</span>
