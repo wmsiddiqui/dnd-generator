@@ -3054,10 +3054,11 @@
             <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
             <div class="gear-slots">
                             ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => {
-                                const wd = (ch.weaponDmg || [])[i] || null;
+                                let wd = (ch.weaponDmg || [])[i] || null;
+                                if (wd && wd.expanded === undefined) wd.expanded = false;
                                 const llMode = wd ? (wd.llMode || (wd.llMult ? 'multiply' : 'none')) : 'none';
                                 const llBonus = wd ? (wd.llBonus || 1) : 1;
-                                const detailsOpen = !!(wd && wd.expanded);
+                                const detailsOpen = !!(wd && wd.expanded === true);
                                 const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
                                 return `
                                 <div class="gear-slot">
