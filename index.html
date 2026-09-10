@@ -2668,11 +2668,13 @@
         <div class="form-group">
           <label class="form-label">Starting Character Level <span class="form-hint">(1–20, default 3)</span></label>
           <input type="number" class="form-input" min="1" max="20" value="${dr.startingCL}"
+                 onfocus="this.select()"
                  oninput="STATE.draft.startingCL=Math.max(1,Math.min(20,parseInt(this.value)||1));render()">
         </div>
         <div class="form-group">
           <label class="form-label">Starting Light Level <span class="form-hint">(1–5, default 1)</span></label>
           <input type="number" class="form-input" min="1" max="5" value="${dr.startingLL}"
+                 onfocus="this.select()"
                  oninput="STATE.draft.startingLL=Math.max(1,Math.min(5,parseInt(this.value)||1));STATE.draft.selectedAbilities=[];render()">
         </div>
       </div>
