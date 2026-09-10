@@ -2244,6 +2244,14 @@
         function save() { localStorage.setItem('dd_chars', JSON.stringify(STATE.chars)); }
         function load() {
             try { const d = localStorage.getItem('dd_chars'); if (d) STATE.chars = JSON.parse(d); } catch (e) { }
+            // Reset transient UI state: collapsed weapon details
+            STATE.chars.forEach(ch => {
+                if (ch.weaponDmg) {
+                    ch.weaponDmg.forEach(wd => {
+                        if (wd) wd.expanded = false;
+                    });
+                }
+            });
         }
 
         function derived(ch) {
