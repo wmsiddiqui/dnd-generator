@@ -1415,6 +1415,161 @@
             color: var(--text);
         }
 
+        /* DAMAGE CHIPS */
+        .dmg-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--gold);
+            background: rgba(245, 158, 11, .08);
+            border: 1px solid rgba(245, 158, 11, .22);
+            border-radius: 5px;
+            padding: 3px 10px;
+            white-space: nowrap;
+            cursor: default;
+            font-family: inherit;
+        }
+
+        .dmg-chip-btn {
+            cursor: pointer;
+            transition: background .12s;
+        }
+
+        .dmg-chip-btn:hover {
+            background: rgba(245, 158, 11, .2);
+        }
+
+        .dmg-chip-note {
+            font-size: .72rem;
+            color: var(--text-dim);
+            font-style: italic;
+        }
+
+        .dmg-chip-passive {
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, .03);
+            border-color: var(--border);
+        }
+
+        /* ROLL MODAL */
+        .roll-dice-area {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .die-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 7px 2px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .die-label {
+            font-size: .72rem;
+            color: var(--text-dim);
+            min-width: 26px;
+            text-align: right;
+        }
+
+        .die-value {
+            font-size: 1.9rem;
+            font-weight: 900;
+            min-width: 44px;
+            text-align: center;
+            color: var(--text-dim);
+            transition: color .35s, transform .25s;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .die-value.settled {
+            color: var(--success);
+            transform: scale(1.08);
+        }
+
+        .die-mult {
+            font-size: .78rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        .die-result {
+            font-size: .9rem;
+            font-weight: 700;
+            margin-left: auto;
+            opacity: 0;
+            transition: opacity .35s;
+            color: var(--text);
+        }
+
+        .die-result.visible { opacity: 1; }
+
+        .modifier-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 2px;
+            font-size: .82rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .mod-value {
+            font-weight: 700;
+            color: var(--accent);
+            opacity: 0;
+            transition: opacity .35s;
+        }
+
+        .mod-value.visible { opacity: 1; }
+
+        .attack-section {
+            background: var(--surface2);
+            border-radius: 5px;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+        }
+
+        .attack-section-label {
+            font-size: .65rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+
+        .attack-total-line {
+            font-size: .8rem;
+            text-align: right;
+            color: var(--text-muted);
+            padding-top: 4px;
+            opacity: 0;
+            transition: opacity .35s;
+        }
+
+        .attack-total-line.visible { opacity: 1; }
+
+        .roll-total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 2px 2px;
+            font-weight: 700;
+        }
+
+        .roll-grand-total {
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: var(--text-dim);
+            transition: color .5s;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .roll-grand-total.revealed { color: var(--gold); }
+
         /* LIGHT ABILITIES */
         .ability-grid {
             display: flex;
@@ -1924,6 +2079,41 @@
             { id: 'dark_melee', name: 'Dark Melee', type: 'melee', description: 'For each creature with Light powers you can see within 20ft × LL, increase this attack by 1d2.' }
         ];
 
+        const MELEE_DAMAGE = {
+            'Void Melee':    { dice: '1d2', llMult: true, mod: 'strength' },
+            'Leech Melee':   { dice: '1d2', llMult: true, mod: 'strength' },
+            'Shadow Strike': { dice: '1d3', llMult: true, mod: 'strength' },
+            'Throw': null,
+            'Smash':         { dice: '1d4', llMult: true, mod: 'strength' },
+            'Grapple':       { dice: '1d2', llMult: true, mod: 'strength' },
+        };
+
+        const ABILITY_DAMAGE = {
+            devouring_light:   { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
+            gravitic_reversal: { dice: '1d6', mod: 'none', note: 'per 10ft fallen, max 3d6' },
+            void_collapse:     { dice: '1d4', llMult: true, mod: 'light' },
+            solar_spears:      { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
+            wormhole:          { dice: '1d2', llMult: true, mod: 'light', note: 'damage option only' },
+            reality_break:     { dice: '1d6', llMult: true, mod: 'light', note: 'per target; may reflect' },
+            vortex:            { dice: '1d4', llMult: true, mod: 'light' },
+            hone:              { dice: '+1d6', mod: 'none', note: 'added to all melees', passive: true },
+            blademaster:       { dice: '+1d3', llMult: true, mod: 'none', note: 'added to all melees', passive: true },
+            spear:             { note: "blade's regular damage, no adv. on atk roll", passive: true },
+            windblade:         { dice: '1d2', llMult: true, mod: 'light' },
+            last_stand:        { dice: '1d6', llMult: true, mod: 'light', note: '+10 atk · weapon breaks after 1 hit' },
+            snipe_gs:          { dice: '+1d10', mod: 'none', note: 'pierce option only' },
+            snipe_ns:          { dice: '+1d10', mod: 'none', note: 'pierce option only' },
+            backstab:          { note: '×2 atk & dmg vs unsuspecting target', passive: true },
+            fists_of_fury:     { dice: '+1d2', mod: 'none', note: 'per consecutive turn (stacks)', passive: true },
+            grenade_strike:    { fixedDice: '1d8', dice: '1d4', llMult: true, mod: 'none', note: 'Buster grenade' },
+            battering_ram:     { dice: '2d6', mod: 'none' },
+            nuclear_light:     { note: '×2 melee damage this turn (you also take ×2)', passive: true },
+            shield_bash:       { dice: '1d4', llMult: true, mod: 'light' },
+            damage_boost:      { dice: '+2', mod: 'none', note: 'to all damage rolls', passive: true },
+            cataclysm:         { dice: '1d20', llMult: true, mod: 'light', note: 'once/long rest · 30ft cone' },
+            drain:             { dice: '1d6', llMult: true, mod: 'light', note: 'also heals you for same amount' },
+        };
+
         /* ==========================================================
            APP STATE
         ========================================================== */
@@ -1997,6 +2187,224 @@
             }, 0);
 
             return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, chaosCharges, lightActions, majorActions, bonusActions, staminaActionNote, armorRating, superBoosts };
+        }
+
+        function getMeleePassiveBonuses(ch) {
+            const sel = ch.selectedAbilities || [];
+            const ll = ch.lightLevel;
+            const bonuses = [];
+            if (sel.includes('hone'))         bonuses.push('+1d6');
+            if (sel.includes('blademaster'))  bonuses.push(`+1d3 ×${ll}`);
+            if (sel.includes('damage_boost')) bonuses.push('+2');
+            return bonuses;
+        }
+
+        function formatDamageChip(dmg, ch, sourceKey) {
+            if (!dmg) return '';
+            const d = derived(ch);
+            if (dmg.passive || (!dmg.dice && !dmg.fixedDice)) {
+                return dmg.note ? `<span class="dmg-chip dmg-chip-passive">${dmg.note}</span>` : '';
+            }
+            let mod = 0;
+            if (dmg.mod === 'light')    mod = d.ltDmgBonus;
+            else if (dmg.mod === 'strength') mod = d.wepDmgBonus;
+            if (dmg.mod !== 'none' && (ch.selectedAbilities || []).includes('damage_boost')) mod += 2;
+            let formula = dmg.fixedDice
+                ? `${dmg.fixedDice} + ${dmg.dice}${dmg.llMult ? ' ×' + ch.lightLevel : ''}`
+                : `${dmg.dice}${dmg.llMult ? ' ×' + ch.lightLevel : ''}`;
+            if (mod > 0) formula += ` +${mod}`;
+            else if (mod < 0) formula += ` ${mod}`;
+            if (dmg.countLL) formula = `${ch.lightLevel}× [${formula}]`;
+            return `<button class="dmg-chip dmg-chip-btn" onclick="openRollConfirm('ability','${sourceKey}','${ch.id}')">🎲 ${formula}</button>${dmg.note ? ` <span class="dmg-chip-note">${dmg.note}</span>` : ''}`;
+        }
+
+        function formatMeleeDamageChip(meleeName, ch) {
+            const dmg = MELEE_DAMAGE[meleeName];
+            if (!dmg) return '';
+            const d = derived(ch);
+            let formula = `${dmg.dice}${dmg.llMult ? ' ×' + ch.lightLevel : ''}`;
+            const mod = d.wepDmgBonus;
+            if (mod > 0) formula += ` +${mod}`;
+            else if (mod < 0) formula += ` ${mod}`;
+            const passives = getMeleePassiveBonuses(ch);
+            if (passives.length) formula += ' ' + passives.join(' ');
+            const key = meleeName.replace(/'/g, "\\'");
+            return `<button class="dmg-chip dmg-chip-btn" onclick="openRollConfirm('melee','${key}','${ch.id}')">🎲 ${formula}</button>`;
+        }
+
+        /* ---- Roll Damage ---- */
+        function rollDie(sides) {
+            // Cryptographically secure, unbiased
+            const arr = new Uint32Array(1);
+            const limit = Math.floor(0x100000000 / sides) * sides;
+            do { crypto.getRandomValues(arr); } while (arr[0] >= limit);
+            return (arr[0] % sides) + 1;
+        }
+
+        function getDamageSourceName(sourceType, sourceKey) {
+            if (sourceType === 'melee') return sourceKey;
+            for (const sub of Object.values(SUBCLASSES)) {
+                const a = sub.abilities.find(x => x.id === sourceKey);
+                if (a) return a.name;
+            }
+            return sourceKey;
+        }
+
+        function computeRollData(sourceType, sourceKey, ch) {
+            const dmg = sourceType === 'ability' ? ABILITY_DAMAGE[sourceKey] : MELEE_DAMAGE[sourceKey];
+            if (!dmg || dmg.passive || (!dmg.dice && !dmg.fixedDice)) return null;
+            const d = derived(ch);
+            let statMod = 0, statModName = '', statModDetail = '';
+            if (dmg.mod === 'light') {
+                statMod = d.ltDmgBonus;
+                statModName = 'Wisdom';
+                statModDetail = `Wisdom ${ch.stats.wisdom} ÷ 3 = +${statMod}`;
+            } else if (dmg.mod === 'strength') {
+                statMod = d.wepDmgBonus;
+                statModName = 'Strength';
+                statModDetail = `Strength ${ch.stats.strength} ÷ 3 = +${statMod}`;
+            }
+            if (dmg.mod !== 'none' && (ch.selectedAbilities || []).includes('damage_boost')) {
+                statMod += 2;
+                statModDetail += statModDetail ? ' +2 (Damage Boost)' : '+2 (Damage Boost)';
+            }
+            const ll = ch.lightLevel;
+            const attackCount = dmg.countLL ? ll : 1;
+            const attacks = [];
+            for (let ai = 0; ai < attackCount; ai++) {
+                const dice = [];
+                if (dmg.fixedDice) {
+                    const [fc, fs] = dmg.fixedDice.split('d').map(Number);
+                    for (let j = 0; j < fc; j++) {
+                        const v = rollDie(fs); dice.push({ sides: fs, value: v, multiplier: null, result: v, fixed: true });
+                    }
+                }
+                if (dmg.dice) {
+                    const clean = dmg.dice.replace(/^\+/, '');
+                    const [mc, ms] = clean.split('d').map(Number);
+                    for (let j = 0; j < mc; j++) {
+                        const v = rollDie(ms);
+                        const mult = dmg.llMult ? ll : null;
+                        dice.push({ sides: ms, value: v, multiplier: mult, result: mult ? v * mult : v, fixed: false });
+                    }
+                }
+                const diceTotal = dice.reduce((s, x) => s + x.result, 0);
+                attacks.push({ dice, diceTotal, statMod, total: diceTotal + statMod });
+            }
+            return { sourceType, sourceKey, attackCount, attacks, statMod, statModName, statModDetail, ll, dmg,
+                     grandTotal: attacks.reduce((s, a) => s + a.total, 0) };
+        }
+
+        function openRollConfirm(sourceType, sourceKey, charId) {
+            const name = getDamageSourceName(sourceType, sourceKey);
+            const safeKey = sourceKey.replace(/'/g, "\\'");
+            showModal(`
+    <div class="levelup-modal" style="text-align:center">
+      <h3>🎲 Roll Damage?</h3>
+      <p style="font-size:1rem;font-weight:700;color:var(--text);margin:8px 0 18px">${name}</p>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:2" onclick="executeRoll('${sourceType}','${safeKey}','${charId}')">Roll!</button>
+      </div>
+    </div>
+  `);
+        }
+
+        function executeRoll(sourceType, sourceKey, charId) {
+            const ch = STATE.chars.find(c => c.id === charId);
+            if (!ch) return;
+            const roll = computeRollData(sourceType, sourceKey, ch);
+            if (!roll) return;
+            STATE._roll = roll;
+            const name = getDamageSourceName(sourceType, sourceKey);
+            const isMulti = roll.attackCount > 1;
+            const safeKey = sourceKey.replace(/'/g, "\\'");
+            // Attack label for multi-attack abilities
+            const attackLabel = sourceKey === 'devouring_light' ? 'Orb' :
+                                sourceKey === 'solar_spears'    ? 'Spear' : 'Attack';
+
+            function buildAttackHtml(atk, ai) {
+                const diceRows = atk.dice.map((die, di) =>
+                    `<div class="die-row">
+                      <span class="die-label">d${die.sides}</span>
+                      <span class="die-value" id="rdv-${ai}-${di}">?</span>
+                      ${die.multiplier ? `<span class="die-mult">×${die.multiplier} (LL)</span>` : ''}
+                      <span class="die-result" id="rdr-${ai}-${di}">${die.multiplier ? '= ?' : ''}</span>
+                    </div>`
+                ).join('');
+                const modRow = roll.statMod !== 0
+                    ? `<div class="modifier-row">
+                        <span class="mod-value" id="rdm-${ai}">${roll.statMod > 0 ? '+' : ''}${roll.statMod}</span>
+                        <span style="color:var(--text-dim);font-size:.75rem">${roll.statModName} mod</span>
+                       </div>` : '';
+                const atkTotalRow = isMulti
+                    ? `<div class="attack-total-line" id="rdat-${ai}">Subtotal: <strong>??</strong></div>` : '';
+                return isMulti
+                    ? `<div class="attack-section">
+                        <div class="attack-section-label">${attackLabel} ${ai + 1}</div>
+                        ${diceRows}${modRow}${atkTotalRow}
+                       </div>`
+                    : `${diceRows}${modRow}`;
+            }
+
+            showModal(`
+    <div class="levelup-modal">
+      <h3 style="margin-bottom:14px">🎲 ${name}</h3>
+      <div class="roll-dice-area"${isMulti ? ' style="max-height:320px;overflow-y:auto"' : ''}>
+        ${roll.attacks.map(buildAttackHtml).join('')}
+      </div>
+      <div class="roll-total-row">
+        <span style="font-size:.85rem;color:var(--text-muted)">${isMulti ? 'Grand Total' : 'Total'}</span>
+        <span class="roll-grand-total" id="rdgt">—</span>
+      </div>
+      ${roll.statModDetail ? `<div style="font-size:.7rem;color:var(--text-dim);text-align:right;margin-top:2px">${roll.statModDetail}</div>` : ''}
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Close</button>
+        <button class="btn btn-secondary" style="flex:1" onclick="executeRoll('${sourceType}','${safeKey}','${charId}')">Roll Again</button>
+      </div>
+    </div>
+  `);
+            animateRoll(roll);
+        }
+
+        function animateRoll(roll) {
+            clearInterval(STATE._rollTimer);
+            const DURATION = 1100, TICK = 55;
+            let elapsed = 0;
+            STATE._rollTimer = setInterval(() => {
+                elapsed += TICK;
+                roll.attacks.forEach((atk, ai) => {
+                    atk.dice.forEach((die, di) => {
+                        const el = document.getElementById(`rdv-${ai}-${di}`);
+                        if (el && !el.classList.contains('settled'))
+                            el.textContent = Math.ceil(Math.random() * die.sides);
+                    });
+                });
+                if (elapsed >= DURATION) {
+                    clearInterval(STATE._rollTimer);
+                    revealRoll(roll);
+                }
+            }, TICK);
+        }
+
+        function revealRoll(roll) {
+            roll.attacks.forEach((atk, ai) => {
+                atk.dice.forEach((die, di) => {
+                    const vEl = document.getElementById(`rdv-${ai}-${di}`);
+                    const rEl = document.getElementById(`rdr-${ai}-${di}`);
+                    if (vEl) { vEl.textContent = die.value; vEl.classList.add('settled'); }
+                    if (rEl && die.multiplier) { rEl.textContent = `= ${die.result}`; rEl.classList.add('visible'); }
+                });
+                const mEl = document.getElementById(`rdm-${ai}`);
+                if (mEl) mEl.classList.add('visible');
+                const atEl = document.getElementById(`rdat-${ai}`);
+                if (atEl) {
+                    atEl.innerHTML = `Subtotal: <strong>${atk.total}</strong>`;
+                    atEl.classList.add('visible');
+                }
+            });
+            const gtEl = document.getElementById('rdgt');
+            if (gtEl) { gtEl.textContent = roll.grandTotal; gtEl.classList.add('revealed'); }
         }
 
         function ptsPerLevel(ch) { return ch.subclass === 'breaker' ? 6 : 3; }
@@ -2607,9 +3015,12 @@
           <div class="sheet-section">
             <div class="section-header">MELEES</div>
             <div class="melee-list">
-              ${cls.meleeOptions.map(m => `
-                <div class="melee-item"><strong>${m}:</strong> ${MELEE_DESCS[m]}</div>
-              `).join('')}
+              ${cls.meleeOptions.map(m => {
+                const chip = formatMeleeDamageChip(m, ch);
+                return `
+                <div class="melee-item"><strong>${m}:</strong> ${MELEE_DESCS[m]}${chip ? `<div style="margin-top:4px">${chip}</div>` : ''}</div>
+              `;
+              }).join('')}
             </div>
             ${(ch.specialAbilities ?? []).some(sid => { const sa = SPECIAL_ABILITIES.find(x => x.id === sid); return sa && sa.type === 'melee'; }) ? `
               <div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
@@ -2639,7 +3050,7 @@
                       <span class="ability-card-name">${a.name}</span>
                       <span class="ability-status ${known ? '' : 'locked'}">${known ? '✓ Known' : '🔒'}</span>
                     </div>
-                    ${known ? `<div class="ability-card-desc">${a.description.replace(/\n/g, '<br>')}</div>` : ''}
+                    ${known ? `<div class="ability-card-desc">${a.description.replace(/\n/g, '<br>')}</div>${ABILITY_DAMAGE[a.id] ? '<div style="margin-top:6px">' + formatDamageChip(ABILITY_DAMAGE[a.id], ch, a.id) + '</div>' : ''}` : ''}
                   </div>
                 `;
                 }).join('')}
