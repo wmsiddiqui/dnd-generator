@@ -39,7 +39,12 @@
             padding: 0;
         }
 
+        html {
+            overflow-x: hidden;
+        }
+
         body {
+            overflow-x: hidden;
             background: var(--bg);
             color: var(--text);
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -52,6 +57,7 @@
             max-width: 1180px;
             margin: 0 auto;
             padding: 12px 16px;
+            overflow-x: hidden;
         }
 
         /* =========================================================
@@ -939,14 +945,18 @@
         .sheet-nav {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .sheet-actions-top {
             display: flex;
             align-items: center;
             gap: 8px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
         }
 
         .points-alert {
@@ -1324,6 +1334,60 @@
             font-size: .72rem;
             color: var(--text-muted);
             flex-shrink: 0;
+        }
+
+        .weapon-dmg-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 5px;
+            flex-wrap: wrap;
+            max-width: 100%;
+        }
+
+        .weapon-dmg-select {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 4px;
+            color: var(--text);
+            padding: 3px 4px;
+            font-size: .78rem;
+            outline: none;
+            cursor: pointer;
+            max-width: 80px;
+        }
+
+        .weapon-dmg-select:focus { border-color: var(--accent); }
+
+        .weapon-dmg-qty {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .weapon-dmg-qty-val {
+            font-size: .82rem;
+            font-weight: 700;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        .weapon-dmg-toggle {
+            font-size: .72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 4px;
+            border: 1px solid var(--border2);
+            background: var(--surface2);
+            color: var(--text-muted);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .weapon-dmg-toggle.active {
+            border-color: rgba(245,158,11,.5);
+            background: rgba(245,158,11,.1);
+            color: var(--gold);
         }
 
         .armor-row .slot-input,
@@ -2946,54 +3010,40 @@
         <!-- RIGHT COLUMN -->
         <div class="sheet-col">
 
-          <!-- ARMOR -->
-          <div class="sheet-section">
-            <div class="section-header">ARMOR (Helmet · Chest · Boots)</div>
-            <div class="armor-grid">
-              ${[['helmet', 'Helmet'], ['chest', 'Chest'], ['boots', 'Boots']].map(([k, lbl]) => `
-                <div class="armor-piece">
-                  <div class="armor-row">
-                    <span class="armor-label">${lbl}</span>
-                    <input type="text" class="slot-input"
-                           value="${esc(ch.armor[k] || '')}" placeholder="Equipped…"
-                           onchange="updateArmor('${k}',this.value)">
-                    ${ch.armor[k] ? `
-                    <div class="armor-rating">
-                      <button class="stat-btn" onclick="adjArmorVal('${k}',-1)">−</button>
-                      <span class="armor-rating-val">${parseInt(ch.armor[k + 'Val']) || 0}</span>
-                      <button class="stat-btn" onclick="adjArmorVal('${k}',1)">+</button>
-                    </div>` : ''}
-                  </div>
-                  ${ch.armor[k] ? `
-                  <div class="armor-spare-row">
-                    <span class="armor-spare-label">Spare</span>
-                    <input type="text" class="slot-input"
-                           value="${esc(ch.armor[k + 'Spare'] || '')}" placeholder="Spare…"
-                           onchange="updateArmor('${k}Spare',this.value)">
-                    ${ch.armor[k + 'Spare'] ? `
-                    <div class="armor-rating">
-                      <button class="stat-btn" onclick="adjArmorVal('${k}Spare',-1)">−</button>
-                      <span class="armor-rating-val">${parseInt(ch.armor[k + 'SpareVal']) || 0}</span>
-                      <button class="stat-btn" onclick="adjArmorVal('${k}Spare',1)">+</button>
-                    </div>` : ''}
-                  </div>` : ''}
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
           <!-- WEAPONS -->
           <div class="sheet-section">
             <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
             <div class="gear-slots">
-              ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => `
+              ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => {
+                const wd = (ch.weaponDmg || [])[i] || null;
+                const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
+                return `
                 <div class="gear-slot">
                   <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
                   <input type="text" class="slot-input"
                          value="${esc(ch.weapons[i] || '')}" placeholder="Empty…"
                          onchange="updateWeapon(${i},this.value)">
+                  ${ch.weapons[i] ? `
+                  <div class="weapon-dmg-row">
+                    <div class="weapon-dmg-qty">
+                      <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="adjWeaponDmgCount(${i},-1)">−</button>
+                      <span class="weapon-dmg-qty-val">${wd ? wd.count : 1}</span>
+                      <button class="stat-btn" style="width:22px;height:22px;font-size:.8rem" onclick="adjWeaponDmgCount(${i},1)">+</button>
+                    </div>
+                    <select class="weapon-dmg-select" onchange="updateWeaponDmg(${i},'die',this.value)">
+                      ${[4,6,8,10,12,20].map(d => `<option value="${d}" ${(wd && wd.die === d) || (!wd && d === 6) ? 'selected' : ''}>d${d}</option>`).join('')}
+                    </select>
+                    <button class="weapon-dmg-toggle ${wd && wd.llMult ? 'active' : ''}" onclick="updateWeaponDmg(${i},'llMult',${!(wd && wd.llMult)})">×LL</button>
+                    <select class="weapon-dmg-select" onchange="updateWeaponDmg(${i},'mod',this.value)">
+                      <option value="none"   ${!wd || wd.mod === 'none'     ? 'selected' : ''}>No mod</option>
+                      <option value="strength" ${wd && wd.mod === 'strength' ? 'selected' : ''}>+STR</option>
+                      <option value="wisdom"   ${wd && wd.mod === 'wisdom'   ? 'selected' : ''}>+WIS</option>
+                    </select>
+                    ${chip ? `<div style="margin-top:2px">${chip}</div>` : ''}
+                  </div>` : ''}
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>
           </div>
 
@@ -3116,6 +3166,42 @@
                </div>`}
           </div>
 
+          <!-- ARMOR -->
+          <div class="sheet-section">
+            <div class="section-header">ARMOR (Helmet · Chest · Boots)</div>
+            <div class="armor-grid">
+              ${[['helmet', 'Helmet'], ['chest', 'Chest'], ['boots', 'Boots']].map(([k, lbl]) => `
+                <div class="armor-piece">
+                  <div class="armor-row">
+                    <span class="armor-label">${lbl}</span>
+                    <input type="text" class="slot-input"
+                           value="${esc(ch.armor[k] || '')}" placeholder="Equipped\u2026"
+                           onchange="updateArmor('${k}',this.value)">
+                    ${ch.armor[k] ? `
+                    <div class="armor-rating">
+                      <button class="stat-btn" onclick="adjArmorVal('${k}',-1)">−</button>
+                      <span class="armor-rating-val">${parseInt(ch.armor[k + 'Val']) || 0}</span>
+                      <button class="stat-btn" onclick="adjArmorVal('${k}',1)">+</button>
+                    </div>` : ''}
+                  </div>
+                  ${ch.armor[k] ? `
+                  <div class="armor-spare-row">
+                    <span class="armor-spare-label">Spare</span>
+                    <input type="text" class="slot-input"
+                           value="${esc(ch.armor[k + 'Spare'] || '')}" placeholder="Spare\u2026"
+                           onchange="updateArmor('${k}Spare',this.value)">
+                    ${ch.armor[k + 'Spare'] ? `
+                    <div class="armor-rating">
+                      <button class="stat-btn" onclick="adjArmorVal('${k}Spare',-1)">−</button>
+                      <span class="armor-rating-val">${parseInt(ch.armor[k + 'SpareVal']) || 0}</span>
+                      <button class="stat-btn" onclick="adjArmorVal('${k}Spare',1)">+</button>
+                    </div>` : ''}
+                  </div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
           <!-- GLIMMER -->
           <div class="sheet-section">
             <div class="section-header">GLIMMER</div>
@@ -3211,6 +3297,7 @@
                 stats: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 },
                 selectedAbilities: [...dr.selectedAbilities],
                 weapons: ['', '', ''],
+                weaponDmg: [null, null, null],
                 armor: { helmet: '', helmetVal: 0, helmetSpare: '', chest: '', chestVal: 0, chestSpare: '', boots: '', bootsVal: 0, bootsSpare: '' },
                 grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
                 grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
@@ -3230,7 +3317,112 @@
         ========================================================== */
         function getActive() { return STATE.chars.find(c => c.id === STATE.activeId); }
 
-        function updateWeapon(i, v) { const c = getActive(); if (!c) return; c.weapons[i] = v; save(); }
+        function updateWeapon(i, v) { const c = getActive(); if (!c) return; c.weapons[i] = v; save(); render(); }
+
+        function ensureWeaponDmg(c, i) {
+            if (!c.weaponDmg) c.weaponDmg = [null, null, null];
+            if (!c.weaponDmg[i]) c.weaponDmg[i] = { count: 1, die: 6, llMult: false, mod: 'none' };
+            return c.weaponDmg[i];
+        }
+
+        function adjWeaponDmgCount(i, delta) {
+            const c = getActive(); if (!c) return;
+            const wd = ensureWeaponDmg(c, i);
+            wd.count = Math.max(1, Math.min(10, wd.count + delta));
+            save(); render();
+        }
+
+        function updateWeaponDmg(i, field, value) {
+            const c = getActive(); if (!c) return;
+            const wd = ensureWeaponDmg(c, i);
+            if (field === 'die') wd.die = parseInt(value);
+            else if (field === 'llMult') wd.llMult = value === true || value === 'true';
+            else if (field === 'mod') wd.mod = value;
+            save(); render();
+        }
+
+        function formatWeaponDamageChip(i, ch) {
+            const wd = (ch.weaponDmg || [])[i] || { count: 1, die: 6, llMult: false, mod: 'none' };
+            const d = derived(ch);
+            let mod = 0;
+            if (wd.mod === 'strength') mod = d.wepDmgBonus;
+            else if (wd.mod === 'wisdom') mod = d.ltDmgBonus;
+            if ((ch.selectedAbilities || []).includes('damage_boost')) mod += 2;
+            let formula = `${wd.count}d${wd.die}${wd.llMult ? ' ×' + ch.lightLevel : ''}`;
+            if (mod > 0) formula += ` +${mod}`;
+            else if (mod < 0) formula += ` ${mod}`;
+            return `<button class="dmg-chip dmg-chip-btn" onclick="openWeaponRollConfirm(${i},'${ch.id}')">🎲 ${formula}</button>`;
+        }
+
+        function openWeaponRollConfirm(i, charId) {
+            const ch = STATE.chars.find(c => c.id === charId); if (!ch) return;
+            const name = ch.weapons[i] || `Weapon Slot ${i + 1}`;
+            showModal(`
+    <div class="levelup-modal" style="text-align:center">
+      <h3>🎲 Roll Damage?</h3>
+      <p style="font-size:1rem;font-weight:700;color:var(--text);margin:8px 0 18px">${esc(name)}</p>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:2" onclick="executeWeaponRoll(${i},'${charId}')">Roll!</button>
+      </div>
+    </div>
+  `);
+        }
+
+        function executeWeaponRoll(i, charId) {
+            const ch = STATE.chars.find(c => c.id === charId); if (!ch) return;
+            const wd = (ch.weaponDmg || [])[i]; if (!wd) return;
+            const d = derived(ch);
+            let statMod = 0, statModName = '', statModDetail = '';
+            if (wd.mod === 'strength') {
+                statMod = d.wepDmgBonus; statModName = 'Strength';
+                statModDetail = `Strength ${ch.stats.strength} ÷ 3 = +${statMod}`;
+            } else if (wd.mod === 'wisdom') {
+                statMod = d.ltDmgBonus; statModName = 'Wisdom';
+                statModDetail = `Wisdom ${ch.stats.wisdom} ÷ 3 = +${statMod}`;
+            }
+            if ((ch.selectedAbilities || []).includes('damage_boost')) {
+                statMod += 2; statModDetail += statModDetail ? ' +2 (Damage Boost)' : '+2 (Damage Boost)';
+            }
+            const dice = Array.from({ length: wd.count }, () => {
+                const v = rollDie(wd.die);
+                const result = wd.llMult ? v * ch.lightLevel : v;
+                return { sides: wd.die, value: v, multiplier: wd.llMult ? ch.lightLevel : null, result };
+            });
+            const diceTotal = dice.reduce((s, x) => s + x.result, 0);
+            const roll = {
+                attackCount: 1,
+                attacks: [{ dice, diceTotal, statMod, total: diceTotal + statMod }],
+                statMod, statModName, statModDetail,
+                grandTotal: diceTotal + statMod
+            };
+            STATE._roll = roll;
+            const name = ch.weapons[i] || `Weapon Slot ${i + 1}`;
+            showModal(`
+    <div class="levelup-modal">
+      <h3 style="margin-bottom:14px">🎲 ${esc(name)}</h3>
+      <div class="roll-dice-area">
+        ${dice.map((die, di) => `
+          <div class="die-row">
+            <span class="die-label">d${die.sides}</span>
+            <span class="die-value" id="rdv-0-${di}">?</span>
+            ${die.multiplier ? `<span class="die-mult">×${die.multiplier} (LL)</span>` : ''}
+            <span class="die-result" id="rdr-0-${di}">${die.multiplier ? '= ?' : ''}</span>
+          </div>`).join('')}
+        ${statMod !== 0 ? `<div class="modifier-row"><span class="mod-value" id="rdm-0">${statMod > 0 ? '+' : ''}${statMod}</span><span style="color:var(--text-dim);font-size:.75rem">${statModName} mod</span></div>` : ''}
+      </div>
+      <div class="roll-total-row">
+        <span style="font-size:.85rem;color:var(--text-muted)">Total</span>
+        <span class="roll-grand-total" id="rdgt">—</span>
+      </div>
+      ${statModDetail ? `<div style="font-size:.7rem;color:var(--text-dim);text-align:right;margin-top:2px">${statModDetail}</div>` : ''}
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  `);
+            animateRoll(roll);
+        }
         function updateArmor(k, v) { const c = getActive(); if (!c) return; c.armor[k] = v; save(); render(); }
         function adjArmorVal(k, delta) { const c = getActive(); if (!c) return; c.armor[k + 'Val'] = Math.max(0, (parseInt(c.armor[k + 'Val']) || 0) + delta); save(); render(); }
         function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
