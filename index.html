@@ -1505,7 +1505,9 @@
             color: var(--text);
         }
 
-        .die-result.visible { opacity: 1; }
+        .die-result.visible {
+            opacity: 1;
+        }
 
         .modifier-row {
             display: flex;
@@ -1523,7 +1525,9 @@
             transition: opacity .35s;
         }
 
-        .mod-value.visible { opacity: 1; }
+        .mod-value.visible {
+            opacity: 1;
+        }
 
         .attack-section {
             background: var(--surface2);
@@ -1550,7 +1554,9 @@
             transition: opacity .35s;
         }
 
-        .attack-total-line.visible { opacity: 1; }
+        .attack-total-line.visible {
+            opacity: 1;
+        }
 
         .roll-total-row {
             display: flex;
@@ -1568,7 +1574,9 @@
             font-variant-numeric: tabular-nums;
         }
 
-        .roll-grand-total.revealed { color: var(--gold); }
+        .roll-grand-total.revealed {
+            color: var(--gold);
+        }
 
         /* LIGHT ABILITIES */
         .ability-grid {
@@ -2080,38 +2088,38 @@
         ];
 
         const MELEE_DAMAGE = {
-            'Void Melee':    { dice: '1d2', llMult: true, mod: 'strength' },
-            'Leech Melee':   { dice: '1d2', llMult: true, mod: 'strength' },
+            'Void Melee': { dice: '1d2', llMult: true, mod: 'strength' },
+            'Leech Melee': { dice: '1d2', llMult: true, mod: 'strength' },
             'Shadow Strike': { dice: '1d3', llMult: true, mod: 'strength' },
             'Throw': null,
-            'Smash':         { dice: '1d4', llMult: true, mod: 'strength' },
-            'Grapple':       { dice: '1d2', llMult: true, mod: 'strength' },
+            'Smash': { dice: '1d4', llMult: true, mod: 'strength' },
+            'Grapple': { dice: '1d2', llMult: true, mod: 'strength' },
         };
 
         const ABILITY_DAMAGE = {
-            devouring_light:   { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
+            devouring_light: { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
             gravitic_reversal: { dice: '1d6', mod: 'none', note: 'per 10ft fallen, max 3d6' },
-            void_collapse:     { dice: '1d4', llMult: true, mod: 'light' },
-            solar_spears:      { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
-            wormhole:          { dice: '1d2', llMult: true, mod: 'light', note: 'damage option only' },
-            reality_break:     { dice: '1d6', llMult: true, mod: 'light', note: 'per target; may reflect' },
-            vortex:            { dice: '1d4', llMult: true, mod: 'light' },
-            hone:              { dice: '+1d6', mod: 'none', note: 'added to all melees', passive: true },
-            blademaster:       { dice: '+1d3', llMult: true, mod: 'none', note: 'added to all melees', passive: true },
-            spear:             { note: "blade's regular damage, no adv. on atk roll", passive: true },
-            windblade:         { dice: '1d2', llMult: true, mod: 'light' },
-            last_stand:        { dice: '1d6', llMult: true, mod: 'light', note: '+10 atk · weapon breaks after 1 hit' },
-            snipe_gs:          { dice: '+1d10', mod: 'none', note: 'pierce option only' },
-            snipe_ns:          { dice: '+1d10', mod: 'none', note: 'pierce option only' },
-            backstab:          { note: '×2 atk & dmg vs unsuspecting target', passive: true },
-            fists_of_fury:     { dice: '+1d2', mod: 'none', note: 'per consecutive turn (stacks)', passive: true },
-            grenade_strike:    { fixedDice: '1d8', dice: '1d4', llMult: true, mod: 'none', note: 'Buster grenade' },
-            battering_ram:     { dice: '2d6', mod: 'none' },
-            nuclear_light:     { note: '×2 melee damage this turn (you also take ×2)', passive: true },
-            shield_bash:       { dice: '1d4', llMult: true, mod: 'light' },
-            damage_boost:      { dice: '+2', mod: 'none', note: 'to all damage rolls', passive: true },
-            cataclysm:         { dice: '1d20', llMult: true, mod: 'light', note: 'once/long rest · 30ft cone' },
-            drain:             { dice: '1d6', llMult: true, mod: 'light', note: 'also heals you for same amount' },
+            void_collapse: { dice: '1d4', llMult: true, mod: 'light' },
+            solar_spears: { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
+            wormhole: { dice: '1d2', llMult: true, mod: 'light', note: 'damage option only' },
+            reality_break: { dice: '1d6', llMult: true, mod: 'light', note: 'per target; may reflect' },
+            vortex: { dice: '1d4', llMult: true, mod: 'light' },
+            hone: { dice: '+1d6', mod: 'none', note: 'added to all melees', passive: true },
+            blademaster: { dice: '+1d3', llMult: true, mod: 'none', note: 'added to all melees', passive: true },
+            spear: { note: "blade's regular damage, no adv. on atk roll", passive: true },
+            windblade: { dice: '1d2', llMult: true, mod: 'light' },
+            last_stand: { dice: '1d6', llMult: true, mod: 'light', note: '+10 atk · weapon breaks after 1 hit' },
+            snipe_gs: { dice: '+1d10', mod: 'none', note: 'pierce option only' },
+            snipe_ns: { dice: '+1d10', mod: 'none', note: 'pierce option only' },
+            backstab: { note: '×2 atk & dmg vs unsuspecting target', passive: true },
+            fists_of_fury: { dice: '+1d2', mod: 'none', note: 'per consecutive turn (stacks)', passive: true },
+            grenade_strike: { fixedDice: '1d8', dice: '1d4', llMult: true, mod: 'none', note: 'Buster grenade' },
+            battering_ram: { dice: '2d6', mod: 'none' },
+            nuclear_light: { note: '×2 melee damage this turn (you also take ×2)', passive: true },
+            shield_bash: { dice: '1d4', llMult: true, mod: 'light' },
+            damage_boost: { dice: '+2', mod: 'none', note: 'to all damage rolls', passive: true },
+            cataclysm: { dice: '1d20', llMult: true, mod: 'light', note: 'once/long rest · 30ft cone' },
+            drain: { dice: '1d6', llMult: true, mod: 'light', note: 'also heals you for same amount' },
         };
 
         /* ==========================================================
@@ -2193,8 +2201,8 @@
             const sel = ch.selectedAbilities || [];
             const ll = ch.lightLevel;
             const bonuses = [];
-            if (sel.includes('hone'))         bonuses.push('+1d6');
-            if (sel.includes('blademaster'))  bonuses.push(`+1d3 ×${ll}`);
+            if (sel.includes('hone')) bonuses.push('+1d6');
+            if (sel.includes('blademaster')) bonuses.push(`+1d3 ×${ll}`);
             if (sel.includes('damage_boost')) bonuses.push('+2');
             return bonuses;
         }
@@ -2206,7 +2214,7 @@
                 return dmg.note ? `<span class="dmg-chip dmg-chip-passive">${dmg.note}</span>` : '';
             }
             let mod = 0;
-            if (dmg.mod === 'light')    mod = d.ltDmgBonus;
+            if (dmg.mod === 'light') mod = d.ltDmgBonus;
             else if (dmg.mod === 'strength') mod = d.wepDmgBonus;
             if (dmg.mod !== 'none' && (ch.selectedAbilities || []).includes('damage_boost')) mod += 2;
             let formula = dmg.fixedDice
@@ -2291,8 +2299,10 @@
                 const diceTotal = dice.reduce((s, x) => s + x.result, 0);
                 attacks.push({ dice, diceTotal, statMod, total: diceTotal + statMod });
             }
-            return { sourceType, sourceKey, attackCount, attacks, statMod, statModName, statModDetail, ll, dmg,
-                     grandTotal: attacks.reduce((s, a) => s + a.total, 0) };
+            return {
+                sourceType, sourceKey, attackCount, attacks, statMod, statModName, statModDetail, ll, dmg,
+                grandTotal: attacks.reduce((s, a) => s + a.total, 0)
+            };
         }
 
         function openRollConfirm(sourceType, sourceKey, charId) {
@@ -2321,7 +2331,7 @@
             const safeKey = sourceKey.replace(/'/g, "\\'");
             // Attack label for multi-attack abilities
             const attackLabel = sourceKey === 'devouring_light' ? 'Orb' :
-                                sourceKey === 'solar_spears'    ? 'Spear' : 'Attack';
+                sourceKey === 'solar_spears' ? 'Spear' : 'Attack';
 
             function buildAttackHtml(atk, ai) {
                 const diceRows = atk.dice.map((die, di) =>
@@ -2360,7 +2370,6 @@
       ${roll.statModDetail ? `<div style="font-size:.7rem;color:var(--text-dim);text-align:right;margin-top:2px">${roll.statModDetail}</div>` : ''}
       <div style="display:flex;gap:10px;margin-top:16px">
         <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Close</button>
-        <button class="btn btn-secondary" style="flex:1" onclick="executeRoll('${sourceType}','${safeKey}','${charId}')">Roll Again</button>
       </div>
     </div>
   `);
@@ -2408,6 +2417,7 @@
         }
 
         function ptsPerLevel(ch) { return ch.subclass === 'breaker' ? 6 : 3; }
+        function getCL(ch) { return Math.floor((ch.cp ?? (ch.characterLevel || 0) * 3) / 3); }
 
         const STAT_META = {
             strength: { label: 'Strength', max: 21, hint: 'Every 3 pts = +1 weapon damage' },
@@ -2480,6 +2490,7 @@
         </div>
         <div class="char-card-levels">
           <span class="level-badge">LL ${c.lightLevel}</span>
+          <span class="level-badge">CL ${getCL(c)}</span>
         </div>
       </div>
       <div class="char-card-stats">
@@ -2756,6 +2767,7 @@
             ${ch.unspentPoints > 0 ? `<span class="points-alert">⚠ ${ch.unspentPoints} unspent pts</span>` : ''}
             <button class="btn btn-sm btn-outline" onclick="openAddCharacterPoints()">+ CP</button>
             <button class="btn btn-sm btn-outline" onclick="openLevelUp()">Level Up</button>
+            <button class="btn btn-sm btn-outline" onclick="openCustomRoll()">🎲 Roll</button>
           </div>
         </div>
         <div class="sheet-title-line">
@@ -2766,6 +2778,7 @@
           <span class="meta-badge class" style="background:${cls.color}18;border-color:${cls.color}55;color:${cls.color}">${cls.name}</span>
           <span class="meta-badge sub">${sub.name}</span>
           <span class="meta-badge ll">LL ${ch.lightLevel}</span>
+          <span class="meta-badge cl">CL ${getCL(ch)}</span>
         </div>
       </div>
 
@@ -3016,11 +3029,11 @@
             <div class="section-header">MELEES</div>
             <div class="melee-list">
               ${cls.meleeOptions.map(m => {
-                const chip = formatMeleeDamageChip(m, ch);
-                return `
+                    const chip = formatMeleeDamageChip(m, ch);
+                    return `
                 <div class="melee-item"><strong>${m}:</strong> ${MELEE_DESCS[m]}${chip ? `<div style="margin-top:4px">${chip}</div>` : ''}</div>
               `;
-              }).join('')}
+                }).join('')}
             </div>
             ${(ch.specialAbilities ?? []).some(sid => { const sa = SPECIAL_ABILITIES.find(x => x.id === sid); return sa && sa.type === 'melee'; }) ? `
               <div style="margin-top:8px;padding-top:6px;border-top:1px solid var(--border)">
@@ -3194,7 +3207,7 @@
             const ch = {
                 id, name: dr.name || 'Unknown Guardian',
                 race: dr.race, class: dr.class, subclass: dr.subclass,
-                lightLevel: dr.startingLL, characterLevel: dr.startingCL, unspentPoints: 0,
+                lightLevel: dr.startingLL, characterLevel: dr.startingCL, cp: dr.startingCL * 3, unspentPoints: 0,
                 stats: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 },
                 selectedAbilities: [...dr.selectedAbilities],
                 weapons: ['', '', ''],
@@ -3311,6 +3324,79 @@
         /* ==========================================================
            LEVEL UP MODAL
         ========================================================== */
+        function openCustomRoll() {
+            showModal(`
+    <div class="levelup-modal">
+      <h3>🎲 Custom Roll</h3>
+      <div style="display:flex;align-items:center;gap:14px;justify-content:center;margin:18px 0">
+        <div>
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Die</div>
+          <select id="cr-die" class="slot-select" style="width:90px;font-size:1rem;font-weight:700;text-align:center">
+            ${[2,3,4,5,6,8,10,20].map(n => `<option value="${n}">d${n}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:6px">Quantity</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="stat-btn" onclick="adjCustomQty(-1)">−</button>
+            <span id="cr-qty" style="font-size:1.3rem;font-weight:800;min-width:28px;text-align:center">1</span>
+            <button class="stat-btn" onclick="adjCustomQty(1)">+</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" style="flex:2" onclick="executeCustomRoll()">Roll!</button>
+      </div>
+    </div>
+  `);
+            window._crQty = 1;
+        }
+
+        function adjCustomQty(delta) {
+            window._crQty = Math.max(1, Math.min(20, (window._crQty || 1) + delta));
+            const el = document.getElementById('cr-qty');
+            if (el) el.textContent = window._crQty;
+        }
+
+        function executeCustomRoll() {
+            const sides = parseInt(document.getElementById('cr-die')?.value || 6);
+            const qty   = window._crQty || 1;
+            const rolls = Array.from({ length: qty }, () => rollDie(sides));
+            const total = rolls.reduce((s, v) => s + v, 0);
+
+            // Build roll data compatible with animateRoll / revealRoll
+            const roll = {
+                attackCount: 1,
+                attacks: [{ dice: rolls.map(v => ({ sides, value: v, multiplier: null, result: v, fixed: false })), diceTotal: total, statMod: 0, total }],
+                statMod: 0, statModName: '', statModDetail: '',
+                grandTotal: total
+            };
+            STATE._roll = roll;
+
+            const label = `${qty}d${sides}`;
+            showModal(`
+    <div class="levelup-modal">
+      <h3 style="margin-bottom:14px">🎲 ${label}</h3>
+      <div class="roll-dice-area">
+        ${rolls.map((_, di) => `
+          <div class="die-row">
+            <span class="die-label">d${sides}</span>
+            <span class="die-value" id="rdv-0-${di}">?</span>
+          </div>`).join('')}
+      </div>
+      <div class="roll-total-row">
+        <span style="font-size:.85rem;color:var(--text-muted)">Total</span>
+        <span class="roll-grand-total" id="rdgt">—</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  `);
+            animateRoll(roll);
+        }
+
         function openAddCharacterPoints() {
             const ch = getActive(); if (!ch) return;
             showModal(`
@@ -3345,7 +3431,7 @@
                 charId: ch.id,
                 type: 'charpoints',
                 cpCount: count,
-                newLevel: ch.characterLevel,
+                newLevel: getCL(ch),
                 pointsTotal: pts,
                 allocated: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
             };
@@ -3362,8 +3448,8 @@
       <h3>Level Up — ${esc(ch.name)}</h3>
       <p>Choose which category to advance:</p>
       <div class="levelup-options">
-        <button class="btn btn-primary" onclick="doLevelUp('character')" ${ch.characterLevel >= 20 ? 'disabled' : ''}>
-          Character Level
+        <button class="btn btn-primary" onclick="doLevelUp('character')" ${getCL(ch) >= 20 ? 'disabled' : ''}>
+          Character Level (CL ${getCL(ch)} → ${getCL(ch) + 1})
           <small>Gain ${ptsPerLevel(ch)} stat points to allocate</small>
         </button>
         <button class="btn btn-secondary" onclick="doLevelUp('light')" ${ch.lightLevel >= 5 ? 'disabled' : ''}>
@@ -3379,12 +3465,12 @@
         function doLevelUp(type) {
             const ch = getActive(); if (!ch) return;
             if (type === 'character') {
-                if (ch.characterLevel >= 20) return;
+                if (getCL(ch) >= 20) return;
                 const pts = ptsPerLevel(ch);
                 STATE.pendingLevelUp = {
                     charId: ch.id,
                     type: 'levelup',
-                    newLevel: ch.characterLevel + 1,
+                    newLevel: getCL(ch) + 1,
                     pointsTotal: pts,
                     allocated: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
                 };
@@ -3468,7 +3554,11 @@
             const pending = STATE.pendingLevelUp; if (!pending) return;
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
             if (totalSpent !== pending.pointsTotal) return;
-            if (pending.type !== 'charpoints') ch.characterLevel = pending.newLevel;
+            if (pending.type === 'levelup') {
+                ch.cp = (ch.cp ?? (ch.characterLevel || 0) * 3) + 3;
+            } else if (pending.type === 'charpoints') {
+                ch.cp = (ch.cp ?? (ch.characterLevel || 0) * 3) + pending.cpCount;
+            }
             for (const [k, v] of Object.entries(pending.allocated)) ch.stats[k] += v;
             STATE.pendingLevelUp = null;
             STATE.modalLocked = false;
