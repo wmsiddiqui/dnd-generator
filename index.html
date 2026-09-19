@@ -1016,25 +1016,31 @@
             .sheet-body {
                 grid-template-columns: 1fr;
             }
+
             .sheet-col {
                 min-width: 0;
                 width: 100%;
             }
+
             .sheet-section {
                 min-width: 0;
             }
+
             .gear-slot {
                 min-width: 0;
             }
+
             .slot-input,
             .slot-select {
                 min-width: 0;
             }
+
             .weapon-dmg-row,
             .weapon-dmg-summary {
                 min-width: 0;
                 width: 100%;
             }
+
             .armor-row,
             .armor-spare-row {
                 min-width: 0;
@@ -2541,7 +2547,11 @@
         }
 
         function ptsPerLevel(ch) { return ch.subclass === 'breaker' ? 6 : 3; }
-        function getCL(ch) { return Math.floor((ch.cp ?? (ch.characterLevel || 0) * 3) / 3); }
+        function getCL(ch) {
+            const stats = ch?.stats || {};
+            const total = Object.values(stats).reduce((sum, value) => sum + (Number(value) || 0), 0);
+            return Math.floor(total / 3);
+        }
 
         const STAT_META = {
             strength: { label: 'Strength', max: 21, hint: 'Every 3 pts = +1 weapon damage' },
@@ -3077,13 +3087,13 @@
             <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
             <div class="gear-slots">
                             ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => {
-                                let wd = (ch.weaponDmg || [])[i] || null;
-                                if (wd && wd.expanded === undefined) wd.expanded = false;
-                                const llMode = wd ? (wd.llMode || (wd.llMult ? 'multiply' : 'none')) : 'none';
-                                const llBonus = wd ? (wd.llBonus || 1) : 1;
-                                const detailsOpen = !!(wd && wd.expanded === true);
-                                const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
-                                return `
+                let wd = (ch.weaponDmg || [])[i] || null;
+                if (wd && wd.expanded === undefined) wd.expanded = false;
+                const llMode = wd ? (wd.llMode || (wd.llMult ? 'multiply' : 'none')) : 'none';
+                const llBonus = wd ? (wd.llBonus || 1) : 1;
+                const detailsOpen = !!(wd && wd.expanded === true);
+                const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
+                return `
                                 <div class="gear-slot">
                                     <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
                                     <input type="text" class="slot-input"
@@ -3124,7 +3134,7 @@
                                     </div>` : ''}` : ''}
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
             </div>
           </div>
 
