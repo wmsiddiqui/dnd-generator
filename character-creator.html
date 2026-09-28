@@ -1016,25 +1016,31 @@
             .sheet-body {
                 grid-template-columns: 1fr;
             }
+
             .sheet-col {
                 min-width: 0;
                 width: 100%;
             }
+
             .sheet-section {
                 min-width: 0;
             }
+
             .gear-slot {
                 min-width: 0;
             }
+
             .slot-input,
             .slot-select {
                 min-width: 0;
             }
+
             .weapon-dmg-row,
             .weapon-dmg-summary {
                 min-width: 0;
                 width: 100%;
             }
+
             .armor-row,
             .armor-spare-row {
                 min-width: 0;
@@ -2271,7 +2277,12 @@
             const wepDmgBonus = Math.floor(ch.stats.strength / 3);
             const ltDmgBonus = Math.floor(ch.stats.wisdom / 3);
 
-            const chaosCharges = sub.id === 'chaos' ? 2 * ch.lightLevel : null;
+            const chaosChargeMax = sub.id === 'chaos'
+                ? 2 * ch.lightLevel * (ch.superActive ? 2 : 1)
+                : null;
+            const chaosCharges = chaosChargeMax === null
+                ? null
+                : Math.min(ch.chaosCharges ?? (2 * ch.lightLevel), chaosChargeMax);
 
             let lightActions = ch.class === 'warlock' ? 2 : 1;
             let majorActions = sub.id === 'breaker' ? 2 : 1;
@@ -2305,7 +2316,7 @@
                 return ch.armor[k] ? sum + (parseInt(ch.armor[k + 'Val']) || 0) : sum;
             }, 0);
 
-            return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, chaosCharges, lightActions, majorActions, bonusActions, staminaActionNote, armorRating, superBoosts };
+            return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, chaosCharges, chaosChargeMax, lightActions, majorActions, bonusActions, staminaActionNote, armorRating, superBoosts };
         }
 
         function getMeleePassiveBonuses(ch) {
@@ -2541,7 +2552,11 @@
         }
 
         function ptsPerLevel(ch) { return ch.subclass === 'breaker' ? 6 : 3; }
-        function getCL(ch) { return Math.floor((ch.cp ?? (ch.characterLevel || 0) * 3) / 3); }
+        function getCL(ch) {
+            const stats = ch?.stats || {};
+            const total = Object.values(stats).reduce((sum, value) => sum + (Number(value) || 0), 0);
+            return Math.floor(total / 3);
+        }
 
         const STAT_META = {
             strength: { label: 'Strength', max: 21, hint: 'Every 3 pts = +1 weapon damage' },
@@ -3007,9 +3022,13 @@
                 <span class="derived-value">+${d.ltDmgBonus}</span>
               </div>
               ${d.chaosCharges !== null ? `
-                <div class="derived-item">
-                  <span class="derived-label">Chaos Charges</span>
-                  <span class="derived-value">${d.chaosCharges}</span>
+                <div class="derived-item" ${ch.superActive ? 'style="background:rgba(245,158,11,.07);border-radius:4px;padding:4px 6px;border:1px solid rgba(245,158,11,.2)"' : ''}>
+                  <span class="derived-label" ${ch.superActive ? 'style="color:var(--gold)"' : ''}>Chaos Charges${ch.superActive ? ' ⚡×2 max' : ''}</span>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <button class="stat-btn" onclick="adjustChaosCharges(-1)" ${d.chaosCharges <= 0 ? 'disabled' : ''}>−</button>
+                    <span class="derived-value" style="min-width:48px;text-align:center;${ch.superActive ? 'color:var(--gold)' : ''}">${d.chaosCharges} / ${d.chaosChargeMax}</span>
+                    <button class="stat-btn" onclick="adjustChaosCharges(1)" ${d.chaosCharges >= d.chaosChargeMax ? 'disabled' : ''}>+</button>
+                  </div>
                 </div>`: ''}
               ${d.armorRating > 0 ? `
               <div class="derived-item">
@@ -3077,13 +3096,13 @@
             <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
             <div class="gear-slots">
                             ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => {
-                                let wd = (ch.weaponDmg || [])[i] || null;
-                                if (wd && wd.expanded === undefined) wd.expanded = false;
-                                const llMode = wd ? (wd.llMode || (wd.llMult ? 'multiply' : 'none')) : 'none';
-                                const llBonus = wd ? (wd.llBonus || 1) : 1;
-                                const detailsOpen = !!(wd && wd.expanded === true);
-                                const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
-                                return `
+                let wd = (ch.weaponDmg || [])[i] || null;
+                if (wd && wd.expanded === undefined) wd.expanded = false;
+                const llMode = wd ? (wd.llMode || (wd.llMult ? 'multiply' : 'none')) : 'none';
+                const llBonus = wd ? (wd.llBonus || 1) : 1;
+                const detailsOpen = !!(wd && wd.expanded === true);
+                const chip = ch.weapons[i] ? formatWeaponDamageChip(i, ch) : '';
+                return `
                                 <div class="gear-slot">
                                     <span class="slot-label">Slot ${i + 1} — ${i === 0 ? 'Equipped' : i === 1 ? 'Holstered' : 'Extra (Hunter)'}</span>
                                     <input type="text" class="slot-input"
@@ -3124,7 +3143,7 @@
                                     </div>` : ''}` : ''}
                                 </div>
                             `;
-                        }).join('')}
+            }).join('')}
             </div>
           </div>
 
@@ -3562,6 +3581,13 @@
             save(); render();
         }
 
+        function adjustChaosCharges(delta) {
+            const c = getActive(); if (!c || c.subclass !== 'chaos') return;
+            const d = derived(c);
+            c.chaosCharges = Math.max(0, Math.min(d.chaosChargeMax, d.chaosCharges + delta));
+            save(); render();
+        }
+
         function activateSuper() {
             const c = getActive(); if (!c) return;
             const charges = Math.max(0, c.lightLevel - 2);
@@ -3572,12 +3598,18 @@
                 c.overshield = c.currentHP ?? baseD.hp;
             }
             c.superActive = true;
+            if (c.subclass === 'chaos') {
+                c.chaosCharges = 4 * c.lightLevel;
+            }
             save(); render();
         }
 
         function deactivateSuper() {
             const c = getActive(); if (!c) return;
             c.superActive = false;
+            if (c.subclass === 'chaos') {
+                c.chaosCharges = Math.min(c.chaosCharges ?? (2 * c.lightLevel), 2 * c.lightLevel);
+            }
             save(); render();
         }
 
@@ -3609,6 +3641,7 @@
             c.revives = c.lightLevel;
             c.superChargesUsed = 0;
             c.superActive = false;
+            if (c.subclass === 'chaos') c.chaosCharges = 2 * c.lightLevel;
             save(); closeModal(); render();
         }
 
