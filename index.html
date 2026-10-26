@@ -2247,11 +2247,19 @@
         /* ==========================================================
            UTILS
         ========================================================== */
-        function save() { localStorage.setItem('dd_chars', JSON.stringify(STATE.chars)); }
+        function save() {
+            STATE.chars.forEach(ch => {
+                ch.statPointBudget = permanentPointBudget(ch);
+                ch.unspentPoints = pointBalance(ch);
+            });
+            localStorage.setItem('dd_chars', JSON.stringify(STATE.chars));
+        }
         function load() {
             try { const d = localStorage.getItem('dd_chars'); if (d) STATE.chars = JSON.parse(d); } catch (e) { }
             // Reset transient UI state: collapsed weapon details
             STATE.chars.forEach(ch => {
+                ch.statPointBudget = permanentPointBudget(ch);
+                ch.unspentPoints = pointBalance(ch);
                 if (ch.weaponDmg) {
                     ch.weaponDmg.forEach(wd => {
                         if (wd) wd.expanded = false;
@@ -2261,21 +2269,22 @@
         }
 
         function derived(ch) {
+            const stats = effectiveStats(ch);
             const cls = CLASSES[ch.class];
             const race = RACES[ch.race];
             const sub = SUBCLASSES[ch.subclass];
 
-            const hp = ch.stats.health * cls.healthConversion;
+            const hp = stats.health * cls.healthConversion;
 
             let baseSpd = 25;
             if (race.speedBonus) baseSpd += race.speedBonus;
             if (cls.speedBonus) baseSpd += cls.speedBonus;
             if (sub.id === 'breaker') baseSpd += 20;
-            let totalSpd = baseSpd + Math.floor(ch.stats.speed / 2) * 5;
+            let totalSpd = baseSpd + Math.floor(stats.speed / 2) * 5;
 
-            const atkBonus = Math.floor(ch.stats.agility / 2);
-            const wepDmgBonus = Math.floor(ch.stats.strength / 3);
-            const ltDmgBonus = Math.floor(ch.stats.wisdom / 3);
+            const atkBonus = Math.floor(stats.agility / 2);
+            const wepDmgBonus = Math.floor(stats.strength / 3);
+            const ltDmgBonus = Math.floor(stats.wisdom / 3);
 
             const chaosChargeMax = sub.id === 'chaos'
                 ? 2 * ch.lightLevel * (ch.superActive ? 2 : 1)
@@ -2286,10 +2295,10 @@
 
             let lightActions = ch.class === 'warlock' ? 2 : 1;
             let majorActions = sub.id === 'breaker' ? 2 : 1;
-            let bonusActions = 1 + (ch.stats.stamina >= 8 ? 1 : 0);
-            let staminaActionNote = ch.stats.stamina >= 20
+            let bonusActions = 1 + (stats.stamina >= 8 ? 1 : 0);
+            let staminaActionNote = stats.stamina >= 20
                 ? '+1 Major or Light · 2 turns back-to-back'
-                : ch.stats.stamina >= 16
+                : stats.stamina >= 16
                     ? '+1 Major or Light'
                     : null;
 
@@ -2301,7 +2310,7 @@
                     lightActions += 2;
                     superBoosts.add('lightActions');
                 } else if (ch.class === 'hunter') {
-                    const effStam = ch.stats.stamina * 2;
+                    const effStam = stats.stamina * 2;
                     const newBonus = 1 + (effStam >= 8 ? 1 : 0);
                     if (newBonus !== bonusActions) { bonusActions = newBonus; superBoosts.add('bonusActions'); }
                     const newNote = effStam >= 20
@@ -2313,7 +2322,7 @@
             }
 
             const armorRating = ['helmet', 'chest', 'boots'].reduce((sum, k) => {
-                return ch.armor[k] ? sum + (parseInt(ch.armor[k + 'Val']) || 0) : sum;
+                return isArmorEquipped(ch, k) ? sum + (parseInt(ch.armor[k + 'Val']) || 0) : sum;
             }, 0);
 
             return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, chaosCharges, chaosChargeMax, lightActions, majorActions, bonusActions, staminaActionNote, armorRating, superBoosts };
@@ -2388,11 +2397,11 @@
             if (dmg.mod === 'light') {
                 statMod = d.ltDmgBonus;
                 statModName = 'Wisdom';
-                statModDetail = `Wisdom ${ch.stats.wisdom} ÷ 3 = +${statMod}`;
+                statModDetail = `Wisdom ${effectiveStats(ch).wisdom} ÷ 3 = +${statMod}`;
             } else if (dmg.mod === 'strength') {
                 statMod = d.wepDmgBonus;
                 statModName = 'Strength';
-                statModDetail = `Strength ${ch.stats.strength} ÷ 3 = +${statMod}`;
+                statModDetail = `Strength ${effectiveStats(ch).strength} ÷ 3 = +${statMod}`;
             }
             if (dmg.mod !== 'none' && (ch.selectedAbilities || []).includes('damage_boost')) {
                 statMod += 2;
@@ -2566,6 +2575,43 @@
             speed: { label: 'Speed', max: 20, hint: 'Every 2 pts = +5ft movement' },
             stamina: { label: 'Stamina', max: 20, hint: '8/16/20 pts unlock action tiers' }
         };
+
+        const ARMOR_SLOTS = ['helmet', 'chest', 'boots'];
+        function isArmorEquipped(ch, slot) {
+            return Boolean(ch.armor[slot]) && ch.armor[slot + 'Equipped'] !== false;
+        }
+        function armorBonuses(ch) {
+            const bonuses = Object.fromEntries([...Object.keys(STAT_META), 'cp'].map(k => [k, 0]));
+            for (const slot of ARMOR_SLOTS) {
+                if (!isArmorEquipped(ch, slot)) continue;
+                const piece = ch.armor[slot + 'Bonuses'] || {};
+                for (const key of Object.keys(bonuses)) bonuses[key] += piece[key] || 0;
+            }
+            return bonuses;
+        }
+        function effectiveStats(ch) {
+            const bonuses = armorBonuses(ch);
+            return Object.fromEntries(Object.keys(STAT_META).map(k => [k, ch.stats[k] + bonuses[k]]));
+        }
+        function allocatedPoints(ch) {
+            return Object.keys(STAT_META).reduce((sum, k) => sum + ch.stats[k], 0);
+        }
+        function permanentPointBudget(ch) {
+            // Older CP totals did not account for Breaker's extra points; preserve existing allocations.
+            return ch.statPointBudget ?? (allocatedPoints(ch) + (ch.unspentPoints || 0));
+        }
+        function pointBalance(ch) {
+            return permanentPointBudget(ch) + armorBonuses(ch).cp - allocatedPoints(ch);
+        }
+        function clampCurrentHP(ch) {
+            if (ch.currentHP != null) ch.currentHP = Math.min(ch.currentHP, derived(ch).hp);
+        }
+        function armorBonusSummary(ch, key) {
+            const bonuses = ch.armor[key + 'Bonuses'] || {};
+            return [...Object.keys(STAT_META), 'cp']
+                .filter(k => bonuses[k] > 0)
+                .map(k => `+${bonuses[k]} ${k === 'cp' ? 'CP' : STAT_META[k].label}`).join(', ') || 'No bonuses';
+        }
 
         /* ==========================================================
            MAIN RENDER
@@ -2896,6 +2942,8 @@
             const d = derived(ch);
 
             const superCharges = Math.max(0, ch.lightLevel - 2);
+            const stats = effectiveStats(ch);
+            const balance = pointBalance(ch);
 
             $app.innerHTML = `
     <div class="sheet-wrap" style="--cls-color:${cls.color}">
@@ -2905,7 +2953,7 @@
         <div class="sheet-nav">
           <button class="btn-back" onclick="goHome()">← All Guardians</button>
           <div class="sheet-actions-top">
-            ${ch.unspentPoints > 0 ? `<span class="points-alert">⚠ ${ch.unspentPoints} unspent pts</span>` : ''}
+            ${balance !== 0 ? `<button class="btn btn-sm btn-outline points-alert" onclick="openPointBalance()">${balance > 0 ? `${balance} unspent pts · Allocate` : `${-balance} pt deficit · Resolve deficit`}</button>` : ''}
             <button class="btn btn-sm btn-outline" onclick="openAddCharacterPoints()">+ CP</button>
             <button class="btn btn-sm btn-outline" onclick="openLevelUp()">Level Up</button>
             <button class="btn btn-sm btn-outline" onclick="openCustomRoll()">🎲 Roll</button>
@@ -2920,6 +2968,7 @@
           <span class="meta-badge sub">${sub.name}</span>
           <span class="meta-badge ll">LL ${ch.lightLevel}</span>
           <span class="meta-badge cl">CL ${getCL(ch)}</span>
+          <span class="meta-badge">CP balance: ${balance > 0 ? '+' : ''}${balance}</span>
         </div>
       </div>
 
@@ -2936,8 +2985,9 @@
               ${[['strength', 'STR'], ['agility', 'AGI'], ['wisdom', 'WIS'], ['health', 'HLTH'], ['speed', 'SPD'], ['stamina', 'STAM']].map(([k, abbr]) => `
                 <div class="stat-box" data-tooltip="${STAT_META[k].hint}">
                   <div class="stat-abbr">${abbr}</div>
-                  <div class="stat-val">${ch.stats[k]}</div>
+                  <div class="stat-val">${stats[k]}</div>
                   <div class="stat-max">/${STAT_META[k].max}</div>
+                  ${stats[k] !== ch.stats[k] ? `<div class="stat-max">${ch.stats[k]} base + ${stats[k] - ch.stats[k]} armor</div>` : ''}
                 </div>
               `).join('')}
             </div>
@@ -3269,6 +3319,7 @@
           <!-- ARMOR -->
           <div class="sheet-section">
             <div class="section-header">ARMOR (Helmet · Chest · Boots)</div>
+            <p class="stat-hint-small">Bonuses apply only while equipped. Direct stat bonuses do not affect CL; allocated armor CP does. Removing armor CP may leave a deficit: choose which base stats to reduce using Resolve deficit.</p>
             <div class="armor-grid">
               ${[['helmet', 'Helmet'], ['chest', 'Chest'], ['boots', 'Boots']].map(([k, lbl]) => `
                 <div class="armor-piece">
@@ -3285,6 +3336,11 @@
                     </div>` : ''}
                   </div>
                   ${ch.armor[k] ? `
+                  <div class="armor-row">
+                    <label class="stat-hint-small"><input type="checkbox" ${isArmorEquipped(ch, k) ? 'checked' : ''} onchange="toggleArmorEquipped('${k}')"> Equipped</label>
+                    <button class="btn btn-sm btn-outline" onclick="openArmorBonuses('${k}')">Bonuses</button>
+                    <span class="stat-hint-small">${armorBonusSummary(ch, k)}</span>
+                  </div>` : ''}
                   <div class="armor-spare-row">
                     <span class="armor-spare-label">Spare</span>
                     <input type="text" class="slot-input"
@@ -3296,7 +3352,13 @@
                       <span class="armor-rating-val">${parseInt(ch.armor[k + 'SpareVal']) || 0}</span>
                       <button class="stat-btn" onclick="adjArmorVal('${k}Spare',1)">+</button>
                     </div>` : ''}
-                  </div>` : ''}
+                    </div>
+                    ${ch.armor[k + 'Spare'] ? `
+                    <div class="armor-spare-row">
+                      <button class="btn btn-sm btn-outline" onclick="openArmorBonuses('${k}Spare')">Bonuses</button>
+                      <button class="btn btn-sm btn-outline" onclick="swapArmor('${k}')">Equip spare</button>
+                      <span class="stat-hint-small">${armorBonusSummary(ch, k + 'Spare')}</span>
+                    </div>` : ''}
                 </div>
               `).join('')}
             </div>
@@ -3394,6 +3456,7 @@
                 id, name: dr.name || 'Unknown Guardian',
                 race: dr.race, class: dr.class, subclass: dr.subclass,
                 lightLevel: dr.startingLL, characterLevel: dr.startingCL, cp: dr.startingCL * 3, unspentPoints: 0,
+                statPointBudget: dr.startingCL * (dr.subclass === 'breaker' ? 6 : 3),
                 stats: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 },
                 selectedAbilities: [...dr.selectedAbilities],
                 weapons: ['', '', ''],
@@ -3491,10 +3554,10 @@
             let statMod = 0, statModName = '', statModDetail = '';
             if (wd.mod === 'strength') {
                 statMod = d.wepDmgBonus; statModName = 'Strength';
-                statModDetail = `Strength ${ch.stats.strength} ÷ 3 = +${statMod}`;
+                statModDetail = `Strength ${effectiveStats(ch).strength} ÷ 3 = +${statMod}`;
             } else if (wd.mod === 'wisdom') {
                 statMod = d.ltDmgBonus; statModName = 'Wisdom';
-                statModDetail = `Wisdom ${ch.stats.wisdom} ÷ 3 = +${statMod}`;
+                statModDetail = `Wisdom ${effectiveStats(ch).wisdom} ÷ 3 = +${statMod}`;
             }
             if ((ch.selectedAbilities || []).includes('damage_boost')) {
                 statMod += 2; statModDetail += statModDetail ? ' +2 (Damage Boost)' : '+2 (Damage Boost)';
@@ -3541,8 +3604,78 @@
   `);
             animateRoll(roll);
         }
-        function updateArmor(k, v) { const c = getActive(); if (!c) return; c.armor[k] = v; save(); render(); }
+        function updateArmor(k, v) {
+            const c = getActive(); if (!c) return;
+            c.statPointBudget = permanentPointBudget(c);
+            c.armor[k] = v;
+            if (!v.trim()) {
+                c.armor[k] = '';
+                c.armor[k + 'Val'] = 0;
+                delete c.armor[k + 'Bonuses'];
+                delete c.armor[k + 'Equipped'];
+            }
+            clampCurrentHP(c);
+            save(); render();
+        }
         function adjArmorVal(k, delta) { const c = getActive(); if (!c) return; c.armor[k + 'Val'] = Math.max(0, (parseInt(c.armor[k + 'Val']) || 0) + delta); save(); render(); }
+        function toggleArmorEquipped(slot) {
+            const ch = getActive(); if (!ch) return;
+            ch.statPointBudget = permanentPointBudget(ch);
+            ch.armor[slot + 'Equipped'] = !isArmorEquipped(ch, slot);
+            clampCurrentHP(ch);
+            save(); render();
+        }
+        function swapArmor(slot) {
+            const ch = getActive(); if (!ch || !ch.armor[slot + 'Spare']) return;
+            ch.statPointBudget = permanentPointBudget(ch);
+            for (const suffix of ['', 'Val', 'Bonuses']) {
+                const equipped = ch.armor[slot + suffix];
+                ch.armor[slot + suffix] = ch.armor[slot + 'Spare' + suffix];
+                ch.armor[slot + 'Spare' + suffix] = equipped;
+            }
+            ch.armor[slot + 'Equipped'] = true;
+            clampCurrentHP(ch);
+            save(); render();
+        }
+        function openArmorBonuses(key) {
+            const ch = getActive(); if (!ch || !ch.armor[key]) return;
+            const bonuses = ch.armor[key + 'Bonuses'] || {};
+            showModal(`
+              <div class="levelup-modal">
+                <h3>Armor Bonuses — ${esc(ch.armor[key])}</h3>
+                <p>Direct bonuses are temporary and do not spend CP. Armor CP can be allocated to any stat; removing it can leave a deficit. Bonuses stack across equipped pieces.</p>
+                <form onsubmit="saveArmorBonuses(event,'${key}')">
+                  ${[...Object.keys(STAT_META), 'cp'].map(k => `
+                    <label class="stat-alloc-row">
+                      <span>${k === 'cp' ? 'Character points (CP)' : STAT_META[k].label}</span>
+                      <input class="form-input" style="width:90px" type="number" name="${k}" min="0" max="999" step="1" required value="${bonuses[k] || 0}">
+                    </label>`).join('')}
+                  <div style="display:flex;gap:10px;margin-top:16px">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Bonuses</button>
+                  </div>
+                </form>
+              </div>`);
+        }
+        function saveArmorBonuses(event, key) {
+            event.preventDefault();
+            const ch = getActive(); if (!ch) return;
+            const form = event.target;
+            if (!form.reportValidity()) return;
+            const bonuses = {};
+            for (const k of [...Object.keys(STAT_META), 'cp']) {
+                const value = Number(form.elements.namedItem(k).value);
+                if (!Number.isInteger(value) || value < 0 || value > 999) {
+                    alert('Armor bonuses must be whole numbers between 0 and 999.');
+                    return;
+                }
+                bonuses[k] = value;
+            }
+            ch.statPointBudget = permanentPointBudget(ch);
+            ch.armor[key + 'Bonuses'] = bonuses;
+            clampCurrentHP(ch);
+            save(); closeModal(); render();
+        }
         function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
         function toggleGrenadeUsed(slot) {
             const c = getActive(); if (!c) return;
@@ -3755,8 +3888,9 @@
                 charId: ch.id,
                 type: 'charpoints',
                 cpCount: count,
+                awardedPoints: pts,
                 newLevel: getCL(ch),
-                pointsTotal: pts,
+                pointsTotal: pointBalance(ch) + pts,
                 allocated: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
             };
             STATE.modalLocked = true;
@@ -3795,7 +3929,8 @@
                     charId: ch.id,
                     type: 'levelup',
                     newLevel: getCL(ch) + 1,
-                    pointsTotal: pts,
+                    awardedPoints: pts,
+                    pointsTotal: pointBalance(ch) + pts,
                     allocated: { strength: 0, agility: 0, wisdom: 0, health: 0, speed: 0, stamina: 0 }
                 };
                 STATE.modalLocked = true;
@@ -3810,26 +3945,43 @@
             }
         }
 
+        function openPointBalance() {
+            const ch = getActive(); if (!ch) return;
+            STATE.pendingLevelUp = {
+                charId: ch.id,
+                type: 'balance',
+                awardedPoints: 0,
+                pointsTotal: pointBalance(ch),
+                allocated: Object.fromEntries(Object.keys(STAT_META).map(k => [k, 0]))
+            };
+            STATE.modalLocked = true;
+            openStatAlloc();
+        }
+
         function openStatAlloc() {
             const ch = getActive(); if (!ch) return;
             const pending = STATE.pendingLevelUp; if (!pending) return;
 
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
             const remaining = pending.pointsTotal - totalSpent;
+            const resolving = pending.type === 'balance' && pending.pointsTotal < 0;
+            const bonuses = armorBonuses(ch);
+            const canConfirm = remaining >= 0 || (!resolving && totalSpent === 0);
 
             showModal(`
       <div class="levelup-modal">
-        <h3>${pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP (${pending.pointsTotal} pts)` : `Allocate Stat Points — Level Up`}</h3>
+        <h3>${resolving ? 'Resolve CP Deficit' : pending.type === 'balance' ? 'Allocate Unspent Points' : pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP` : 'Allocate Stat Points — Level Up'}</h3>
         <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
-          Distribute <strong>${pending.pointsTotal}</strong> point${pending.pointsTotal !== 1 ? 's' : ''}.
-          Use − to undo any allocation before confirming.
+          ${resolving
+                    ? `Choose which base stats to reduce by <strong>${-pending.pointsTotal}</strong> points. Direct armor bonuses cannot be removed here. Use + to undo a reduction.`
+                    : `Allocate available points now or confirm to save them for later. Use − to undo an allocation. ${pending.pointsTotal < 0 ? 'This award reduces the deficit; resolve the remaining deficit from the sheet.' : ''}`}
         </p>
         <div class="points-remaining ${remaining === 0 ? 'done' : ''}" style="margin-bottom:12px">
-          Points remaining: <strong>${remaining}</strong>
+          ${remaining < 0 ? 'Point deficit' : 'Points remaining'}: <strong>${Math.abs(remaining)}</strong>
         </div>
         <div class="stat-alloc-grid modal-stat-grid">
           ${Object.entries(STAT_META).map(([k, meta]) => {
-                const cur = ch.stats[k];
+                const cur = ch.stats[k] + bonuses[k];
                 const alloc = pending.allocated[k];
                 const newVal = cur + alloc;
                 return `
@@ -3838,13 +3990,14 @@
                 <span class="stat-name">${meta.label}</span>
                 <span class="stat-hint-small">${meta.hint}</span>
                 <span class="stat-hint-small">
-                  ${cur}${alloc > 0 ? ` <span style="color:var(--success)">+${alloc}</span>` : ''} / ${meta.max}
+                  ${cur}${alloc !== 0 ? ` (${alloc > 0 ? '+' : ''}${alloc})` : ''} / ${meta.max}
+                  ${bonuses[k] ? ` · includes +${bonuses[k]} armor` : ''}
                 </span>
               </div>
               <div class="stat-alloc-controls">
-                <button class="stat-btn" onclick="adjPendingStat('${k}',-1)" ${alloc <= 0 ? 'disabled' : ''}>−</button>
+                <button class="stat-btn" onclick="adjPendingStat('${k}',-1)" ${(resolving ? ch.stats[k] + alloc <= 0 || remaining >= 0 : alloc <= 0) ? 'disabled' : ''}>−</button>
                 <span class="stat-value">${newVal}</span>
-                <button class="stat-btn" onclick="adjPendingStat('${k}',1)"  ${remaining <= 0 || newVal > meta.max ? 'disabled' : ''}>+</button>
+                <button class="stat-btn" onclick="adjPendingStat('${k}',1)" ${(resolving ? alloc >= 0 : remaining <= 0 || newVal >= meta.max) ? 'disabled' : ''}>+</button>
               </div>
             </div>
           `;
@@ -3852,8 +4005,8 @@
         </div>
         <div style="display:flex;gap:10px;margin-top:16px">
           <button class="btn btn-outline" style="flex:1" onclick="cancelLevelUp()">Cancel</button>
-          <button class="btn btn-primary" style="flex:2" onclick="confirmLevelUp()" ${remaining !== 0 ? 'disabled' : ''}>
-            ${remaining === 0 ? (pending.type === 'charpoints' ? '✓ Confirm Character Points' : '✓ Confirm Level Up') : `Allocate ${remaining} more point${remaining !== 1 ? 's' : ''}…`}
+          <button class="btn btn-primary" style="flex:2" onclick="confirmLevelUp()" ${canConfirm ? '' : 'disabled'}>
+            ${resolving ? 'Confirm Reductions' : 'Confirm & Save Points'}
           </button>
         </div>
       </div>
@@ -3865,10 +4018,14 @@
             const ch = getActive(); if (!ch) return;
             const alloc = pending.allocated[key] || 0;
             const newAlloc = alloc + delta;
-            if (newAlloc < 0) return;
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0) + delta;
-            if (totalSpent > pending.pointsTotal) return;
-            if (delta > 0 && ch.stats[key] + newAlloc > STAT_META[key].max) return;
+            const resolving = pending.type === 'balance' && pending.pointsTotal < 0;
+            if (resolving) {
+                if (newAlloc > 0 || ch.stats[key] + newAlloc < 0 || totalSpent < pending.pointsTotal) return;
+            } else {
+                if (newAlloc < 0 || totalSpent > pending.pointsTotal) return;
+                if (delta > 0 && effectiveStats(ch)[key] + newAlloc > STAT_META[key].max) return;
+            }
             pending.allocated[key] = newAlloc;
             openStatAlloc();
         }
@@ -3876,14 +4033,25 @@
         function confirmLevelUp() {
             const ch = getActive(); if (!ch) return;
             const pending = STATE.pendingLevelUp; if (!pending) return;
+            if (pending.charId !== ch.id) {
+                alert('The active character changed. Cancel and reopen point allocation.');
+                return;
+            }
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
-            if (totalSpent !== pending.pointsTotal) return;
+            const remaining = pointBalance(ch) + pending.awardedPoints - totalSpent;
+            const resolving = pending.type === 'balance' && pending.pointsTotal < 0;
+            if (resolving ? remaining !== 0 : remaining < 0 && totalSpent !== 0) {
+                alert('Resolve the point deficit before confirming these allocations.');
+                return;
+            }
+            ch.statPointBudget = permanentPointBudget(ch) + pending.awardedPoints;
             if (pending.type === 'levelup') {
                 ch.cp = (ch.cp ?? (ch.characterLevel || 0) * 3) + 3;
             } else if (pending.type === 'charpoints') {
                 ch.cp = (ch.cp ?? (ch.characterLevel || 0) * 3) + pending.cpCount;
             }
             for (const [k, v] of Object.entries(pending.allocated)) ch.stats[k] += v;
+            clampCurrentHP(ch);
             STATE.pendingLevelUp = null;
             STATE.modalLocked = false;
             save(); closeModal(); render();
