@@ -258,3 +258,116 @@ test('armor bonus form saves valid integers and rejects invalid values explicitl
     assert.equal(alerts.length, 1);
     assert.equal(run('pointBalance(getActive())'), 3);
 });
+
+test('active weapon bonuses stack with armor and affect derived stats without spending CP', () => {
+    const { run } = setup();
+    run(`
+        getActive().weapons = ['Active', 'Holstered', 'Extra'];
+        getActive().weaponBonuses = [
+            {strength: 3, agility: 2, wisdom: 2, health: 2, speed: 3, stamina: 7, armor: 4},
+            {strength: 10, armor: 20}, {strength: 20, armor: 30}
+        ];
+        getActive().armor.helmetBonuses = {strength: 3};
+    `);
+    assert.equal(run('effectiveStats(getActive()).strength'), 9);
+    assert.equal(run('derived(getActive()).wepDmgBonus'), 3);
+    assert.equal(run('derived(getActive()).atkBonus'), 2);
+    assert.equal(run('derived(getActive()).ltDmgBonus'), 1);
+    assert.equal(run('derived(getActive()).hp'), run('3 * CLASSES.titan.healthConversion'));
+    assert.equal(run('derived(getActive()).bonusActions'), 2);
+    assert.equal(run('derived(getActive()).armorRating'), 6);
+    assert.equal(run('pointBalance(getActive())'), 0);
+    assert.equal(run('getCL(getActive())'), 3);
+    run("openPointBalance();");
+    assert.equal(run('getActive().stats.strength'), 3);
+});
+
+test('weapon swaps move names, damage settings and bonuses together and preserve the extra slot', () => {
+    const { run, storage, elements } = setup();
+    run(`
+        STATE.view = 'sheet';
+        getActive().weapons = ['First', 'Second', 'Extra'];
+        getActive().weaponDmg = [
+            {count: 2, die: 8, mod: 'strength', expanded: true},
+            {count: 1, die: 6, mod: 'wisdom', expanded: false},
+            {count: 3, die: 4, mod: 'none'}
+        ];
+        getActive().weaponBonuses = [{health: 3, armor: 4}, {agility: 2, armor: 1}, {strength: 10}];
+        getActive().currentHP = derived(getActive()).hp;
+        swapWeapons();
+    `);
+    assert.equal(run('getActive().weapons[0]'), 'Second');
+    assert.equal(run('getActive().weaponDmg[0].mod'), 'wisdom');
+    assert.equal(run('getActive().weaponDmg[1].expanded'), true);
+    assert.equal(run('getActive().weaponBonuses[0].armor'), 1);
+    assert.equal(run('getActive().weaponBonuses[1].health'), 3);
+    assert.equal(run('getActive().weapons[2]'), 'Extra');
+    assert.equal(run('getActive().weaponDmg[2].die'), 4);
+    assert.equal(run('getActive().weaponBonuses[2].strength'), 10);
+    assert.equal(run('getActive().currentHP'), run('CLASSES.titan.healthConversion'));
+    assert.equal(run('derived(getActive()).armorRating'), 3);
+    assert.match(elements.get('app').innerHTML, /Swap Slots 1 &amp; 2/);
+    assert.match(elements.get('app').innerHTML, /Edit Bonuses/);
+    const saved = storage.get('dd_chars');
+    run('STATE.chars = []; load(); save();');
+    const restored = JSON.parse(storage.get('dd_chars'));
+    const original = JSON.parse(saved);
+    for (const characters of [restored, original]) {
+        for (const damage of characters[0].weaponDmg || []) {
+            if (damage) delete damage.expanded;
+        }
+    }
+    assert.deepEqual(restored, original);
+    run('swapWeapons();');
+    assert.equal(run('getActive().weapons[0]'), 'First');
+    assert.equal(run('getActive().weaponDmg[0].die'), 8);
+    assert.equal(run('derived(getActive()).hp'), run('4 * CLASSES.titan.healthConversion'));
+    assert.equal(run('getActive().currentHP'), run('CLASSES.titan.healthConversion'));
+});
+
+test('legacy weapon swaps support absent damage and bonus arrays and require two occupied slots', () => {
+    const { run } = setup();
+    run("getActive().weapons = ['First', 'Second', '']; swapWeapons();");
+    assert.equal(run('getActive().weapons[0]'), 'Second');
+    assert.equal(run('getActive().weaponDmg'), undefined);
+    assert.equal(run('getActive().weaponBonuses'), undefined);
+    run("updateWeapon(1, ''); swapWeapons();");
+    assert.equal(run('getActive().weapons[0]'), 'Second');
+    run("CLASSES.titan.weaponSlots = 1; getActive().weapons[1] = 'Other'; swapWeapons();");
+    assert.equal(run('getActive().weapons[0]'), 'Second');
+});
+
+test('weapon bonus form saves whole numbers, rejects invalid values and clearing removes stale settings', () => {
+    const { run, alerts } = setup();
+    run(`
+        getActive().weapons[0] = 'Test';
+        const values = {strength: 3, agility: 0, wisdom: 0, health: 2, speed: 0, stamina: 0, armor: 4};
+        const event = {preventDefault() {}, target: {reportValidity: () => true, elements: {namedItem: k => ({value: String(values[k])})}}};
+        saveWeaponBonuses(event, 0);
+    `);
+    assert.equal(run('derived(getActive()).armorRating'), 6);
+    assert.equal(run('derived(getActive()).wepDmgBonus'), 2);
+    for (const value of [-1, 1.5, 1000, NaN]) {
+        run(`values.armor = ${value}; saveWeaponBonuses(event, 0);`);
+        assert.equal(run('getActive().weaponBonuses[0].armor'), 4);
+    }
+    assert.equal(alerts.length, 4);
+    run("getActive().currentHP = derived(getActive()).hp; ensureWeaponDmg(getActive(), 0); updateWeapon(0, '   ');");
+    assert.equal(run('getActive().weapons[0]'), '');
+    assert.equal(run('getActive().weaponBonuses[0]'), null);
+    assert.equal(run('getActive().weaponDmg[0]'), null);
+    assert.equal(run('derived(getActive()).armorRating'), 2);
+    assert.equal(run('getActive().currentHP'), run('CLASSES.titan.healthConversion'));
+    run("updateWeapon(0, 'Replacement');");
+    assert.equal(run('effectiveStats(getActive()).strength'), 3);
+});
+
+test('point allocation respects active weapon stat caps and deficits only reduce base stats', () => {
+    const { run } = setup();
+    run("getActive().weapons[0] = 'Test'; getActive().weaponBonuses = [{strength: 18, wisdom: 4}]; getActive().statPointBudget = 10; openPointBalance(); adjPendingStat('strength', 1);");
+    assert.equal(run('STATE.pendingLevelUp.allocated.strength'), 0);
+    run("cancelLevelUp(); getActive().statPointBudget = 8; openPointBalance(); adjPendingStat('wisdom', -1); adjPendingStat('wisdom', -1); confirmLevelUp();");
+    assert.equal(run('getActive().stats.wisdom'), 0);
+    assert.equal(run('effectiveStats(getActive()).wisdom'), 4);
+    assert.equal(run('pointBalance(getActive())'), 0);
+});

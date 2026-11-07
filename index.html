@@ -2323,7 +2323,7 @@
 
             const armorRating = ['helmet', 'chest', 'boots'].reduce((sum, k) => {
                 return isArmorEquipped(ch, k) ? sum + (parseInt(ch.armor[k + 'Val']) || 0) : sum;
-            }, 0);
+            }, weaponBonuses(ch).armor);
 
             return { hp, totalSpd, atkBonus, wepDmgBonus, ltDmgBonus, chaosCharges, chaosChargeMax, lightActions, majorActions, bonusActions, staminaActionNote, armorRating, superBoosts };
         }
@@ -2590,8 +2590,17 @@
             return bonuses;
         }
         function effectiveStats(ch) {
-            const bonuses = armorBonuses(ch);
+            const bonuses = equipmentBonuses(ch);
             return Object.fromEntries(Object.keys(STAT_META).map(k => [k, ch.stats[k] + bonuses[k]]));
+        }
+        function weaponBonuses(ch) {
+            const active = ch.weapons[0] ? (ch.weaponBonuses || [])[0] || {} : {};
+            return Object.fromEntries([...Object.keys(STAT_META), 'armor'].map(k => [k, active[k] || 0]));
+        }
+        function equipmentBonuses(ch) {
+            const armor = armorBonuses(ch);
+            const weapon = weaponBonuses(ch);
+            return Object.fromEntries(Object.keys(STAT_META).map(k => [k, armor[k] + weapon[k]]));
         }
         function allocatedPoints(ch) {
             return Object.keys(STAT_META).reduce((sum, k) => sum + ch.stats[k], 0);
@@ -2608,9 +2617,12 @@
         }
         function armorBonusSummary(ch, key) {
             const bonuses = ch.armor[key + 'Bonuses'] || {};
-            return [...Object.keys(STAT_META), 'cp']
+            return equipmentBonusSummary(bonuses);
+        }
+        function equipmentBonusSummary(bonuses) {
+            return [...Object.keys(STAT_META), 'cp', 'armor']
                 .filter(k => bonuses[k] > 0)
-                .map(k => `+${bonuses[k]} ${k === 'cp' ? 'CP' : STAT_META[k].label}`).join(', ') || 'No bonuses';
+                .map(k => `+${bonuses[k]} ${k === 'cp' ? 'CP' : k === 'armor' ? 'Armor' : STAT_META[k].label}`).join(', ') || 'No bonuses';
         }
 
         /* ==========================================================
@@ -2988,7 +3000,7 @@
                   <div class="stat-abbr">${abbr}</div>
                   <div class="stat-val">${stats[k]}</div>
                   <div class="stat-max">/${STAT_META[k].max}</div>
-                  ${stats[k] !== ch.stats[k] ? `<div class="stat-max">${ch.stats[k]} base + ${stats[k] - ch.stats[k]} armor</div>` : ''}
+                  ${stats[k] !== ch.stats[k] ? `<div class="stat-max">${ch.stats[k]} base + ${stats[k] - ch.stats[k]} equipment</div>` : ''}
                 </div>
               `).join('')}
             </div>
@@ -3145,6 +3157,8 @@
           <!-- WEAPONS -->
           <div class="sheet-section">
             <div class="section-header">WEAPONS (${cls.weaponSlots} slot${cls.weaponSlots > 1 ? 's' : ''})</div>
+            <p class="stat-hint-small">Only slot 1 grants weapon stat and armor bonuses. Swapping moves each weapon's damage settings and bonuses with it. Direct bonuses do not spend CP or change CL.</p>
+            ${cls.weaponSlots > 1 && ch.weapons[0] && ch.weapons[1] ? `<button class="btn btn-sm btn-outline" onclick="swapWeapons()">Swap Slots 1 &amp; 2</button>` : ''}
             <div class="gear-slots">
                             ${[0, 1, 2].filter(i => i < cls.weaponSlots).map(i => {
                 let wd = (ch.weaponDmg || [])[i] || null;
@@ -3163,6 +3177,10 @@
                                     <div class="weapon-dmg-summary">
                                         ${chip}
                                         <button class="btn btn-sm btn-outline" onclick="toggleWeaponDmgDetails(${i})">${detailsOpen ? 'Hide Details' : 'Edit Damage'}</button>
+                                    </div>
+                                    <div class="weapon-dmg-summary">
+                                        <span class="stat-hint-small">${equipmentBonusSummary((ch.weaponBonuses || [])[i] || {})}${i > 0 ? ' (inactive)' : ''}</span>
+                                        <button class="btn btn-sm btn-outline" onclick="openWeaponBonuses(${i})">Edit Bonuses</button>
                                     </div>
                                     ${detailsOpen ? `
                                     <div class="weapon-dmg-row">
@@ -3462,6 +3480,7 @@
                 selectedAbilities: [...dr.selectedAbilities],
                 weapons: ['', '', ''],
                 weaponDmg: [null, null, null],
+                weaponBonuses: [null, null, null],
                 armor: { helmet: '', helmetVal: 0, helmetSpare: '', chest: '', chestVal: 0, chestSpare: '', boots: '', bootsVal: 0, bootsSpare: '' },
                 grenadeSlot1: CLASSES[dr.class].grenadeOptions[0],
                 grenadeSlot2: CLASSES[dr.class].grenadeOptions[1],
@@ -3481,7 +3500,55 @@
         ========================================================== */
         function getActive() { return STATE.chars.find(c => c.id === STATE.activeId); }
 
-        function updateWeapon(i, v) { const c = getActive(); if (!c) return; c.weapons[i] = v; save(); render(); }
+        function updateWeapon(i, v) {
+            const c = getActive(); if (!c) return;
+            c.weapons[i] = v.trim() ? v : '';
+            if (!c.weapons[i]) {
+                if (c.weaponDmg) c.weaponDmg[i] = null;
+                if (c.weaponBonuses) c.weaponBonuses[i] = null;
+            }
+            clampCurrentHP(c);
+            save(); render();
+        }
+
+        function swapWeapons() {
+            const ch = getActive();
+            if (!ch || CLASSES[ch.class].weaponSlots < 2 || !ch.weapons[0] || !ch.weapons[1]) return;
+            for (const key of ['weapons', 'weaponDmg', 'weaponBonuses']) {
+                if (!ch[key]) continue;
+                [ch[key][0], ch[key][1]] = [ch[key][1] ?? null, ch[key][0] ?? null];
+            }
+            clampCurrentHP(ch);
+            save(); render();
+        }
+
+        function openWeaponBonuses(i) {
+            const ch = getActive(); if (!ch || !ch.weapons[i]) return;
+            const bonuses = (ch.weaponBonuses || [])[i] || {};
+            showModal(`
+              <div class="levelup-modal">
+                <h3>Weapon Bonuses — ${esc(ch.weapons[i])}</h3>
+                <p>Only the weapon in slot 1 grants these bonuses. Stats stack with equipped armor without spending CP or changing CL. Bonus armor adds to your armor rating.</p>
+                <form onsubmit="saveWeaponBonuses(event,${i})">
+                  ${equipmentBonusFields(bonuses, [...Object.keys(STAT_META), 'armor'])}
+                  <div style="display:flex;gap:10px;margin-top:16px">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Bonuses</button>
+                  </div>
+                </form>
+              </div>`);
+        }
+
+        function saveWeaponBonuses(event, i) {
+            event.preventDefault();
+            const ch = getActive(); if (!ch || !ch.weapons[i]) return;
+            const bonuses = readEquipmentBonusForm(event.target, [...Object.keys(STAT_META), 'armor'], 'Weapon');
+            if (!bonuses) return;
+            if (!ch.weaponBonuses) ch.weaponBonuses = [null, null, null];
+            ch.weaponBonuses[i] = bonuses;
+            clampCurrentHP(ch);
+            save(); closeModal(); render();
+        }
 
         function toggleWeaponDmgDetails(i) {
             const c = getActive(); if (!c) return;
@@ -3646,11 +3713,7 @@
                 <h3>Armor Bonuses — ${esc(ch.armor[key])}</h3>
                 <p>Direct bonuses are temporary and do not spend CP. Armor CP can be allocated to any stat; removing it can leave a deficit. Bonuses stack across equipped pieces.</p>
                 <form onsubmit="saveArmorBonuses(event,'${key}')">
-                  ${[...Object.keys(STAT_META), 'cp'].map(k => `
-                    <label class="stat-alloc-row">
-                      <span>${k === 'cp' ? 'Character points (CP)' : STAT_META[k].label}</span>
-                      <input class="form-input" style="width:90px" type="number" name="${k}" min="0" max="999" step="1" required value="${bonuses[k] || 0}">
-                    </label>`).join('')}
+                  ${equipmentBonusFields(bonuses, [...Object.keys(STAT_META), 'cp'])}
                   <div style="display:flex;gap:10px;margin-top:16px">
                     <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn btn-primary">Save Bonuses</button>
@@ -3661,21 +3724,32 @@
         function saveArmorBonuses(event, key) {
             event.preventDefault();
             const ch = getActive(); if (!ch) return;
-            const form = event.target;
-            if (!form.reportValidity()) return;
-            const bonuses = {};
-            for (const k of [...Object.keys(STAT_META), 'cp']) {
-                const value = Number(form.elements.namedItem(k).value);
-                if (!Number.isInteger(value) || value < 0 || value > 999) {
-                    alert('Armor bonuses must be whole numbers between 0 and 999.');
-                    return;
-                }
-                bonuses[k] = value;
-            }
+            const bonuses = readEquipmentBonusForm(event.target, [...Object.keys(STAT_META), 'cp'], 'Armor');
+            if (!bonuses) return;
             ch.statPointBudget = permanentPointBudget(ch);
             ch.armor[key + 'Bonuses'] = bonuses;
             clampCurrentHP(ch);
             save(); closeModal(); render();
+        }
+        function equipmentBonusFields(bonuses, keys) {
+            return keys.map(k => `
+                    <label class="stat-alloc-row">
+                      <span>${k === 'cp' ? 'Character points (CP)' : k === 'armor' ? 'Bonus armor' : STAT_META[k].label}</span>
+                      <input class="form-input" style="width:90px" type="number" name="${k}" min="0" max="999" step="1" required value="${bonuses[k] || 0}">
+                    </label>`).join('');
+        }
+        function readEquipmentBonusForm(form, keys, label) {
+            if (!form.reportValidity()) return null;
+            const bonuses = {};
+            for (const k of keys) {
+                const value = Number(form.elements.namedItem(k).value);
+                if (!Number.isInteger(value) || value < 0 || value > 999) {
+                    alert(`${label} bonuses must be whole numbers between 0 and 999.`);
+                    return null;
+                }
+                bonuses[k] = value;
+            }
+            return bonuses;
         }
         function updateGrenade(slot, v) { const c = getActive(); if (!c) return; if (slot === 1) c.grenadeSlot1 = v; else c.grenadeSlot2 = v; save(); }
         function toggleGrenadeUsed(slot) {
@@ -3977,7 +4051,7 @@
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
             const remaining = pending.pointsTotal - totalSpent;
             const resolving = pending.pointsTotal < 0 && (pending.type === 'balance' || pending.awardedPoints < 0);
-            const bonuses = armorBonuses(ch);
+            const bonuses = equipmentBonuses(ch);
             const canConfirm = remaining >= 0 || (!resolving && totalSpent === 0);
 
             showModal(`
@@ -3985,7 +4059,7 @@
         <h3>${pending.awardedPoints < 0 ? `Subtract ${-pending.cpCount} CP${resolving ? ' — Resolve Deficit' : ''}` : resolving ? 'Resolve CP Deficit' : pending.type === 'balance' ? 'Allocate Unspent Points' : pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP` : 'Allocate Stat Points — Level Up'}</h3>
         <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
           ${resolving
-                    ? `Choose which base stats to reduce by <strong>${-pending.pointsTotal}</strong> points. Direct armor bonuses cannot be removed here. Use + to undo a reduction.`
+                    ? `Choose which base stats to reduce by <strong>${-pending.pointsTotal}</strong> points. Direct equipment bonuses cannot be removed here. Use + to undo a reduction.`
                     : `${pending.awardedPoints < 0 ? 'The subtraction uses unspent points first. ' : ''}Allocate available points now or confirm to save them for later. Use − to undo an allocation. ${pending.pointsTotal < 0 ? 'This award reduces the deficit; resolve the remaining deficit from the sheet.' : ''}`}
         </p>
         <div class="points-remaining ${remaining === 0 ? 'done' : ''}" style="margin-bottom:12px">
@@ -4003,7 +4077,7 @@
                 <span class="stat-hint-small">${meta.hint}</span>
                 <span class="stat-hint-small">
                   ${cur}${alloc !== 0 ? ` (${alloc > 0 ? '+' : ''}${alloc})` : ''} / ${meta.max}
-                  ${bonuses[k] ? ` · includes +${bonuses[k]} armor` : ''}
+                  ${bonuses[k] ? ` · includes +${bonuses[k]} equipment` : ''}
                 </span>
               </div>
               <div class="stat-alloc-controls">
