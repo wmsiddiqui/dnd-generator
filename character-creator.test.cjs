@@ -137,6 +137,70 @@ test('allocation respects effective stat caps and supports undo', () => {
     assert.equal(run('STATE.pendingLevelUp.allocated.agility'), 0);
 });
 
+test('CP subtraction uses banked points first and persists without changing stats', () => {
+    const { run, storage } = setup();
+    run('getActive().statPointBudget = 12; getActive().cp = 12; openAddCharacterPoints(true); adjCPInput(1); doAddCharacterPoints(true);');
+    assert.equal(run('STATE.pendingLevelUp.cpCount'), -2);
+    assert.equal(run('STATE.pendingLevelUp.pointsTotal'), 1);
+    assert.equal(run('permanentPointBudget(getActive())'), 12);
+    run('confirmLevelUp();');
+    assert.equal(run('permanentPointBudget(getActive())'), 10);
+    assert.equal(run('getActive().cp'), 10);
+    assert.equal(run('pointBalance(getActive())'), 1);
+    assert.equal(run('getActive().stats.strength'), 3);
+    const saved = storage.get('dd_chars');
+    run('STATE.chars = []; load(); save();');
+    assert.equal(storage.get('dd_chars'), saved);
+});
+
+test('CP subtraction resolves deficits with chosen base reductions and preserves armor bonuses', () => {
+    const { run, alerts, elements } = setup();
+    run("getActive().armor.helmetBonuses = {strength: 4, cp: 1}; window._cpCount = 3; doAddCharacterPoints(true);");
+    assert.equal(run('STATE.pendingLevelUp.pointsTotal'), -2);
+    assert.match(elements.get('modal-content').innerHTML, /Subtract 3 CP/);
+    run('confirmLevelUp();');
+    assert.equal(alerts.length, 1);
+    assert.equal(run('permanentPointBudget(getActive())'), 9);
+    run("adjPendingStat('strength', -1); adjPendingStat('strength', 1);");
+    assert.equal(run('STATE.pendingLevelUp.allocated.strength'), 0);
+    run("adjPendingStat('wisdom', -1); adjPendingStat('wisdom', -1);");
+    assert.equal(run('STATE.pendingLevelUp.allocated.wisdom'), -1);
+    run("adjPendingStat('agility', -1); adjPendingStat('strength', -1);");
+    assert.equal(run('STATE.pendingLevelUp.allocated.strength'), 0);
+    run('confirmLevelUp();');
+    assert.equal(run('permanentPointBudget(getActive())'), 6);
+    assert.equal(run('getActive().cp'), 6);
+    assert.equal(run('pointBalance(getActive())'), 0);
+    assert.equal(run('effectiveStats(getActive()).strength'), 7);
+    assert.equal(run('armorBonuses(getActive()).cp'), 1);
+    assert.equal(run('getCL(getActive())'), 2);
+});
+
+test('canceling CP subtraction leaves the character unchanged', () => {
+    const { run } = setup();
+    const before = run('JSON.stringify(getActive())');
+    run("window._cpCount = 2; doAddCharacterPoints(true); adjPendingStat('strength', -1); cancelLevelUp();");
+    assert.equal(run('JSON.stringify(getActive())'), before);
+});
+
+test('CP subtraction rejects invalid amounts and cannot remove armor CP or go below zero', () => {
+    const { run, alerts } = setup();
+    run("getActive().armor.helmetBonuses = {cp: 3};");
+    for (const amount of [0, -1, 1.5, NaN, Infinity, 10]) {
+        run(`window._cpCount = ${amount}; doAddCharacterPoints(true);`);
+        assert.equal(run('STATE.pendingLevelUp'), null);
+    }
+    assert.equal(alerts.length, 6);
+    assert.equal(run('permanentPointBudget(getActive())'), 9);
+    run("window._cpCount = 9; doAddCharacterPoints(true); adjPendingStat('strength', -1); adjPendingStat('strength', -1); adjPendingStat('strength', -1); adjPendingStat('agility', -1); adjPendingStat('agility', -1); adjPendingStat('wisdom', -1); confirmLevelUp();");
+    assert.equal(run('permanentPointBudget(getActive())'), 0);
+    assert.equal(run('pointBalance(getActive())'), 0);
+    assert.equal(run('armorBonuses(getActive()).cp'), 3);
+    run('window._cpCount = 1; doAddCharacterPoints(true);');
+    assert.equal(run('STATE.pendingLevelUp'), null);
+    assert.equal(alerts.length, 7);
+});
+
 test('spares retain their own bonuses and ratings and never apply until equipped', () => {
     const { run } = setup();
     run("getActive().armor.helmetBonuses = {strength: 2, cp: 2}; getActive().armor.helmetSpare = 'Spare'; getActive().armor.helmetSpareVal = 4; getActive().armor.helmetSpareBonuses = {agility: 3}; save();");

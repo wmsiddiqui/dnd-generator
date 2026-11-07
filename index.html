@@ -2955,6 +2955,7 @@
           <div class="sheet-actions-top">
             ${balance !== 0 ? `<button class="btn btn-sm btn-outline points-alert" onclick="openPointBalance()">${balance > 0 ? `${balance} unspent pts · Allocate` : `${-balance} pt deficit · Resolve deficit`}</button>` : ''}
             <button class="btn btn-sm btn-outline" onclick="openAddCharacterPoints()">+ CP</button>
+            <button class="btn btn-sm btn-outline" onclick="openAddCharacterPoints(true)">− CP</button>
             <button class="btn btn-sm btn-outline" onclick="openLevelUp()">Level Up</button>
             <button class="btn btn-sm btn-outline" onclick="openCustomRoll()">🎲 Roll</button>
           </div>
@@ -3854,12 +3855,14 @@
             animateRoll(roll);
         }
 
-        function openAddCharacterPoints() {
+        function openAddCharacterPoints(subtract = false) {
             const ch = getActive(); if (!ch) return;
             showModal(`
     <div class="levelup-modal">
-      <h3>Add Character Points — ${esc(ch.name)}</h3>
-      <p>Each character point grants <strong>1 stat point</strong> to allocate.</p>
+      <h3>${subtract ? 'Subtract' : 'Add'} Character Points — ${esc(ch.name)}</h3>
+      <p>${subtract
+                    ? `Remove permanent CP, using unspent points first. If this creates a deficit, choose which base stats to reduce before confirming. Armor bonuses are unchanged. You can subtract up to <strong>${permanentPointBudget(ch)} CP</strong>.`
+                    : 'Each character point grants <strong>1 stat point</strong> to allocate.'}</p>
       <div style="display:flex;align-items:center;gap:12px;justify-content:center;margin:18px 0">
         <button class="stat-btn" onclick="adjCPInput(-1)">−</button>
         <span id="cp-input-val" style="font-size:1.6rem;font-weight:700;min-width:2rem;text-align:center">1</span>
@@ -3867,7 +3870,7 @@
       </div>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button class="btn btn-outline" style="flex:1" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" style="flex:2" onclick="doAddCharacterPoints()">Add CP</button>
+        <button class="btn btn-primary" style="flex:2" onclick="doAddCharacterPoints(${subtract})" ${subtract && permanentPointBudget(ch) < 1 ? 'disabled' : ''}>${subtract ? 'Subtract' : 'Add'} CP</button>
       </div>
     </div>
   `);
@@ -3880,9 +3883,18 @@
             if (el) el.textContent = window._cpCount;
         }
 
-        function doAddCharacterPoints() {
+        function doAddCharacterPoints(subtract = false) {
             const ch = getActive(); if (!ch) return;
-            const count = window._cpCount || 1;
+            const amount = window._cpCount ?? 1;
+            if (!Number.isSafeInteger(amount) || amount < 1) {
+                alert('Enter a positive whole number of character points.');
+                return;
+            }
+            if (subtract && amount > permanentPointBudget(ch)) {
+                alert(`You can subtract at most ${permanentPointBudget(ch)} permanent CP. Armor CP cannot be subtracted.`);
+                return;
+            }
+            const count = subtract ? -amount : amount;
             const pts = count;
             STATE.pendingLevelUp = {
                 charId: ch.id,
@@ -3964,17 +3976,17 @@
 
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
             const remaining = pending.pointsTotal - totalSpent;
-            const resolving = pending.type === 'balance' && pending.pointsTotal < 0;
+            const resolving = pending.pointsTotal < 0 && (pending.type === 'balance' || pending.awardedPoints < 0);
             const bonuses = armorBonuses(ch);
             const canConfirm = remaining >= 0 || (!resolving && totalSpent === 0);
 
             showModal(`
       <div class="levelup-modal">
-        <h3>${resolving ? 'Resolve CP Deficit' : pending.type === 'balance' ? 'Allocate Unspent Points' : pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP` : 'Allocate Stat Points — Level Up'}</h3>
+        <h3>${pending.awardedPoints < 0 ? `Subtract ${-pending.cpCount} CP${resolving ? ' — Resolve Deficit' : ''}` : resolving ? 'Resolve CP Deficit' : pending.type === 'balance' ? 'Allocate Unspent Points' : pending.type === 'charpoints' ? `Allocate Stat Points — ${pending.cpCount} CP` : 'Allocate Stat Points — Level Up'}</h3>
         <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:10px">
           ${resolving
                     ? `Choose which base stats to reduce by <strong>${-pending.pointsTotal}</strong> points. Direct armor bonuses cannot be removed here. Use + to undo a reduction.`
-                    : `Allocate available points now or confirm to save them for later. Use − to undo an allocation. ${pending.pointsTotal < 0 ? 'This award reduces the deficit; resolve the remaining deficit from the sheet.' : ''}`}
+                    : `${pending.awardedPoints < 0 ? 'The subtraction uses unspent points first. ' : ''}Allocate available points now or confirm to save them for later. Use − to undo an allocation. ${pending.pointsTotal < 0 ? 'This award reduces the deficit; resolve the remaining deficit from the sheet.' : ''}`}
         </p>
         <div class="points-remaining ${remaining === 0 ? 'done' : ''}" style="margin-bottom:12px">
           ${remaining < 0 ? 'Point deficit' : 'Points remaining'}: <strong>${Math.abs(remaining)}</strong>
@@ -4019,7 +4031,7 @@
             const alloc = pending.allocated[key] || 0;
             const newAlloc = alloc + delta;
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0) + delta;
-            const resolving = pending.type === 'balance' && pending.pointsTotal < 0;
+            const resolving = pending.pointsTotal < 0 && (pending.type === 'balance' || pending.awardedPoints < 0);
             if (resolving) {
                 if (newAlloc > 0 || ch.stats[key] + newAlloc < 0 || totalSpent < pending.pointsTotal) return;
             } else {
@@ -4039,7 +4051,11 @@
             }
             const totalSpent = Object.values(pending.allocated).reduce((a, b) => a + b, 0);
             const remaining = pointBalance(ch) + pending.awardedPoints - totalSpent;
-            const resolving = pending.type === 'balance' && pending.pointsTotal < 0;
+            const resolving = pending.pointsTotal < 0 && (pending.type === 'balance' || pending.awardedPoints < 0);
+            if (permanentPointBudget(ch) + pending.awardedPoints < 0) {
+                alert('Permanent CP cannot be reduced below zero. Cancel and reopen CP subtraction.');
+                return;
+            }
             if (resolving ? remaining !== 0 : remaining < 0 && totalSpent !== 0) {
                 alert('Resolve the point deficit before confirming these allocations.');
                 return;
