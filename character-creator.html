@@ -2047,7 +2047,7 @@
                 abilities: [
                     { id: 'void_channeling', name: 'Void Channeling', type: 'channeling', description: 'Pick 1 (pick 2 if LL 3+). Lasts until end of turn:\n• Add element (void/electric/fire) to all Light abilities\n• Perform Void and Leech melees as 1 action\n• Unable to move next turn, gain extra Light Action this turn\n• Alter gravity to make object/creature twice as heavy (≤200 lbs)\n• Create 10ft entropic cloud within 30ft (substances corrode rapidly)' },
                     { id: 'event_horizon', name: 'Event Horizon', type: 'ability', description: 'Create a 5ft radius gravity well within 15ft. Small creatures: rooted. Normal creatures: pulled, must use half speed to escape. Lasts while concentration held.' },
-                    { id: 'devouring_light', name: 'Devouring Light', type: 'ability', description: 'Create 1 × LL Void orbs. Each fires in a direct line up to 30ft. On impact: 1d4 × LL per orb.' },
+                    { id: 'devouring_light', name: 'Devouring Light', type: 'ability', description: 'Create 1 × LL Void orbs. Each fires in a direct line up to 30ft. On impact: 1d4 × LL per orb. Add the Wisdom damage bonus once to the combined total, not to each orb.' },
                     { id: 'singularity_form', name: 'Singularity Form', type: 'ability', description: 'Once per long rest. Until your next turn: pass through physical objects, only take damage from non-physical sources. Use your speed in any direction.' },
                     { id: 'gravitic_reversal', name: 'Gravitic Reversal', type: 'ability', description: 'Target creature/unsecured object within 30ft. Gravity inverts; target lifts 10ft upward. At end of effect, target drops. 1d6 void damage per 10ft fallen (max 3d6).' },
                     { id: 'entropy_leech', name: 'Entropy Leech', type: 'ability', description: 'Target creature within 30ft gains disadvantage on their next attack roll. You gain advantage on your next attack roll.' },
@@ -2206,7 +2206,7 @@
         };
 
         const ABILITY_DAMAGE = {
-            devouring_light: { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
+            devouring_light: { dice: '1d4', llMult: true, countLL: true, mod: 'light', modOnce: true },
             gravitic_reversal: { dice: '1d6', mod: 'none', note: 'per 10ft fallen, max 3d6' },
             void_collapse: { dice: '1d4', llMult: true, mod: 'light' },
             solar_spears: { dice: '1d4', llMult: true, countLL: true, mod: 'light' },
@@ -2347,6 +2347,8 @@
             let mod = 0;
             if (dmg.mod === 'light') mod = d.ltDmgBonus;
             else if (dmg.mod === 'strength') mod = d.wepDmgBonus;
+            const totalMod = dmg.modOnce ? mod : 0;
+            if (dmg.modOnce) mod = 0;
             if (dmg.mod !== 'none' && (ch.selectedAbilities || []).includes('damage_boost')) mod += 2;
             let formula = dmg.fixedDice
                 ? `${dmg.fixedDice} + ${dmg.dice}${dmg.llMult ? ' ×' + ch.lightLevel : ''}`
@@ -2354,6 +2356,8 @@
             if (mod > 0) formula += ` +${mod}`;
             else if (mod < 0) formula += ` ${mod}`;
             if (dmg.countLL) formula = `${ch.lightLevel}× [${formula}]`;
+            if (totalMod > 0) formula += ` +${totalMod}`;
+            else if (totalMod < 0) formula += ` ${totalMod}`;
             return `<button class="dmg-chip dmg-chip-btn" onclick="openRollConfirm('ability','${sourceKey}','${ch.id}')">🎲 ${formula}</button>${dmg.note ? ` <span class="dmg-chip-note">${dmg.note}</span>` : ''}`;
         }
 
@@ -2403,8 +2407,16 @@
                 statModName = 'Strength';
                 statModDetail = `Strength ${effectiveStats(ch).strength} ÷ 3 = +${statMod}`;
             }
+            const totalMod = dmg.modOnce ? statMod : 0;
+            const totalModName = dmg.modOnce ? statModName : '';
+            if (dmg.modOnce) {
+                statMod = 0;
+                statModName = '';
+                statModDetail += ' (once to total)';
+            }
             if (dmg.mod !== 'none' && (ch.selectedAbilities || []).includes('damage_boost')) {
                 statMod += 2;
+                if (dmg.modOnce) statModName = 'Damage Boost';
                 statModDetail += statModDetail ? ' +2 (Damage Boost)' : '+2 (Damage Boost)';
             }
             const ll = ch.lightLevel;
@@ -2444,8 +2456,8 @@
                 attacks.push({ dice, diceTotal, statMod, total: diceTotal + statMod });
             }
             return {
-                sourceType, sourceKey, attackCount, attacks, statMod, statModName, statModDetail, ll, dmg,
-                grandTotal: attacks.reduce((s, a) => s + a.total, 0)
+                sourceType, sourceKey, attackCount, attacks, statMod, statModName, statModDetail, totalMod, totalModName, ll, dmg,
+                grandTotal: attacks.reduce((s, a) => s + a.total, 0) + totalMod
             };
         }
 
@@ -2486,9 +2498,9 @@
                       <span class="die-result" id="rdr-${ai}-${di}">${die.multiplier ? '= ?' : ''}</span>
                     </div>`
                 ).join('');
-                const modRow = roll.statMod !== 0
+                const modRow = atk.statMod !== 0
                     ? `<div class="modifier-row">
-                        <span class="mod-value" id="rdm-${ai}">${roll.statMod > 0 ? '+' : ''}${roll.statMod}</span>
+                        <span class="mod-value" id="rdm-${ai}">${atk.statMod > 0 ? '+' : ''}${atk.statMod}</span>
                         <span style="color:var(--text-dim);font-size:.75rem">${roll.statModName} mod</span>
                        </div>` : '';
                 const atkTotalRow = isMulti
@@ -2507,6 +2519,10 @@
       <div class="roll-dice-area"${isMulti ? ' style="max-height:320px;overflow-y:auto"' : ''}>
         ${roll.attacks.map(buildAttackHtml).join('')}
       </div>
+      ${roll.totalMod !== 0 ? `<div class="modifier-row">
+        <span class="mod-value" id="rdm-total">${roll.totalMod > 0 ? '+' : ''}${roll.totalMod}</span>
+        <span style="color:var(--text-dim);font-size:.75rem">${roll.totalModName} mod · once to total</span>
+      </div>` : ''}
       <div class="roll-total-row">
         <span style="font-size:.85rem;color:var(--text-muted)">${isMulti ? 'Grand Total' : 'Total'}</span>
         <span class="roll-grand-total" id="rdgt">—</span>
@@ -2556,6 +2572,8 @@
                     atEl.classList.add('visible');
                 }
             });
+            const totalModEl = document.getElementById('rdm-total');
+            if (totalModEl) totalModEl.classList.add('visible');
             const gtEl = document.getElementById('rdgt');
             if (gtEl) { gtEl.textContent = roll.grandTotal; gtEl.classList.add('revealed'); }
         }
@@ -2697,6 +2715,7 @@
       </div>
       <div class="char-card-actions" onclick="event.stopPropagation()">
         <button class="btn btn-sm btn-outline" onclick="viewChar('${c.id}')">View Sheet</button>
+        <button class="btn btn-sm btn-outline" onclick="openCloneChar('${c.id}')">Clone</button>
         <button class="btn btn-sm btn-secondary" onclick="exportOne('${c.id}')">⬇ Export</button>
         <button class="btn btn-sm btn-danger"  onclick="deleteChar('${c.id}')">Delete</button>
       </div>
@@ -3430,6 +3449,51 @@
             if (!confirm('Permanently delete this guardian?')) return;
             STATE.chars = STATE.chars.filter(c => c.id !== id);
             save(); render();
+        }
+
+        function openCloneChar(id) {
+            const source = STATE.chars.find(c => c.id === id);
+            if (!source) {
+                alert('This guardian no longer exists. Refresh the Guardians list.');
+                return;
+            }
+            showModal(`
+              <div class="levelup-modal">
+                <h3>Clone Guardian — ${esc(source.name)}</h3>
+                <p>Create an independent copy with the same stats, equipment, abilities and current resources. Give the copy a name below; the original stays unchanged.</p>
+                <form onsubmit="cloneChar(event,'${id}')">
+                  <label for="clone-name-input">New Guardian Name</label>
+                  <input id="clone-name-input" class="form-input" type="text" name="name" required value="${esc(source.name + ' (Copy)')}">
+                  <div style="display:flex;gap:10px;margin-top:16px">
+                    <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Clone Guardian</button>
+                  </div>
+                </form>
+              </div>`);
+            document.getElementById('clone-name-input').focus();
+        }
+
+        function cloneChar(event, id) {
+            event.preventDefault();
+            const source = STATE.chars.find(c => c.id === id);
+            if (!source) {
+                alert('The original guardian no longer exists. Cancel and refresh the Guardians list.');
+                return;
+            }
+            const form = event.target;
+            if (!form.reportValidity()) return;
+            const name = form.elements.namedItem('name').value.trim();
+            if (!name) {
+                alert('Enter a name for the cloned guardian.');
+                return;
+            }
+            const clone = JSON.parse(JSON.stringify(source));
+            clone.id = 'ch_' + crypto.randomUUID();
+            clone.name = name;
+            STATE.chars.push(clone);
+            save(); closeModal();
+            STATE.view = 'home';
+            render();
         }
 
         function nextStep() { STATE.step++; render(); }

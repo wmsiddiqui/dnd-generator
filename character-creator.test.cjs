@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const vm = require('node:vm');
+const { webcrypto } = require('node:crypto');
 const { test } = require('node:test');
 
 const html = readFileSync(join(__dirname, 'character-creator.html'), 'utf8');
@@ -14,7 +15,7 @@ function setup({ legacy = false, breaker = false } = {}) {
     const context = vm.createContext({
         document: {
             getElementById(id) {
-                if (!elements.has(id)) elements.set(id, { innerHTML: '', style: {} });
+                if (!elements.has(id)) elements.set(id, { innerHTML: '', style: {}, focus() {} });
                 return elements.get(id);
             },
             addEventListener() {}
@@ -24,6 +25,7 @@ function setup({ legacy = false, breaker = false } = {}) {
             setItem: (key, value) => storage.set(key, value)
         },
         window: {},
+        crypto: webcrypto,
         alert: message => alerts.push(message)
     });
     vm.runInContext(script, context);
@@ -370,4 +372,126 @@ test('point allocation respects active weapon stat caps and deficits only reduce
     assert.equal(run('getActive().stats.wisdom'), 0);
     assert.equal(run('effectiveStats(getActive()).wisdom'), 4);
     assert.equal(run('pointBalance(getActive())'), 0);
+});
+
+test('Devouring Light adds effective Wisdom damage once after summing all orbs at every LL', () => {
+    const { run } = setup();
+    run("rollDie = () => 2; getActive().stats.wisdom = 6; getActive().weapons[0] = 'Test'; getActive().weaponBonuses = [{wisdom: 3}];");
+    for (let ll = 1; ll <= 5; ll++) {
+        run(`getActive().lightLevel = ${ll}; STATE._roll = computeRollData('ability', 'devouring_light', getActive());`);
+        assert.equal(run('STATE._roll.attackCount'), ll);
+        assert.equal(run('STATE._roll.totalMod'), 3);
+        assert.equal(run('STATE._roll.attacks.every(a => a.statMod === 0 && a.total === a.diceTotal)'), true);
+        assert.equal(run('STATE._roll.attacks.every(a => a.diceTotal === 2 * getActive().lightLevel)'), true);
+        assert.equal(run('STATE._roll.grandTotal'), 2 * ll * ll + 3);
+        const chip = run("formatDamageChip(ABILITY_DAMAGE.devouring_light, getActive(), 'devouring_light')");
+        assert.ok(chip.includes(`${ll}× [1d4 ×${ll}] +3`));
+    }
+});
+
+test('Devouring Light shows Wisdom only once outside orb subtotals in the roll modal', () => {
+    const { run, elements } = setup();
+    run("rollDie = () => 2; animateRoll = () => {}; getActive().lightLevel = 3; getActive().stats.wisdom = 9; executeRoll('ability', 'devouring_light', 'test');");
+    const modal = elements.get('modal-content').innerHTML;
+    assert.equal((modal.match(/id="rdm-total"/g) || []).length, 1);
+    assert.equal((modal.match(/id="rdm-\d+"/g) || []).length, 0);
+    assert.match(modal, /Wisdom mod · once to total/);
+    assert.equal(run('STATE._roll.grandTotal'), 21);
+});
+
+test('Devouring Light preserves per-orb Damage Boost while applying Wisdom once', () => {
+    const { run } = setup();
+    run("rollDie = () => 2; getActive().lightLevel = 3; getActive().stats.wisdom = 9; getActive().selectedAbilities = ['damage_boost']; STATE._roll = computeRollData('ability', 'devouring_light', getActive());");
+    assert.equal(run('STATE._roll.totalMod'), 3);
+    assert.equal(run('STATE._roll.attacks.every(a => a.statMod === 2 && a.total === 8)'), true);
+    assert.equal(run('STATE._roll.statModName'), 'Damage Boost');
+    assert.equal(run('STATE._roll.grandTotal'), 27);
+    assert.ok(run("formatDamageChip(ABILITY_DAMAGE.devouring_light, getActive(), 'devouring_light')").includes('3× [1d4 ×3 +2] +3'));
+});
+
+test('zero Wisdom and other ability and melee modifiers retain their existing behavior', () => {
+    const { run } = setup();
+    run("rollDie = () => 2; getActive().lightLevel = 3;");
+    assert.equal(run("computeRollData('ability', 'devouring_light', getActive()).grandTotal"), 18);
+    run('getActive().stats.wisdom = 9;');
+    assert.equal(run("computeRollData('ability', 'solar_spears', getActive()).grandTotal"), 27);
+    assert.ok(run("formatDamageChip(ABILITY_DAMAGE.solar_spears, getActive(), 'solar_spears')").includes('3× [1d4 ×3 +3]'));
+    assert.equal(run("computeRollData('ability', 'void_collapse', getActive()).grandTotal"), 9);
+    assert.equal(run("computeRollData('melee', 'Grapple', getActive()).grandTotal"), 7);
+});
+
+test('Guardians list offers cloning with an escaped editable copy name and cancellation', () => {
+    const { run, elements } = setup();
+    run(`getActive().name = 'Test <Guardian> "One"'; renderHome(); openCloneChar('test');`);
+    assert.match(elements.get('app').innerHTML, /onclick="openCloneChar\('test'\)">Clone/);
+    assert.match(elements.get('modal-content').innerHTML, /value="Test &lt;Guardian&gt; &quot;One&quot; \(Copy\)"/);
+    run('closeModal();');
+    assert.equal(run('STATE.chars.length'), 1);
+});
+
+test('cloning preserves all character data with an independent ID and chosen trimmed name', () => {
+    const { run, storage } = setup();
+    run(`
+        getActive().weapons = ['Active', 'Holstered', 'Extra'];
+        getActive().weaponDmg = [{count: 2, die: 8, mod: 'wisdom'}, null, null];
+        getActive().weaponBonuses = [{wisdom: 3, armor: 2}, null, null];
+        getActive().armor.helmetBonuses = {cp: 3, health: 2};
+        getActive().selectedAbilities = ['damage_boost'];
+        getActive().specialAbilities = ['test-special'];
+        getActive().notes = 'Original notes';
+        getActive().currentHP = 2;
+        getActive().glimmer = 100;
+        getActive().grenadeUsed1 = true;
+        getActive().superChargesUsed = 1;
+        save();
+        const original = JSON.stringify(getActive());
+        const event = {preventDefault() {}, target: {reportValidity: () => true, elements: {namedItem: () => ({value: '  New Guardian  '})}}};
+        cloneChar(event, 'test');
+    `);
+    assert.equal(run('STATE.chars.length'), 2);
+    assert.equal(run('STATE.chars[1].name'), 'New Guardian');
+    assert.notEqual(run('STATE.chars[1].id'), 'test');
+    assert.equal(run('JSON.stringify(getActive())'), run('original'));
+    assert.equal(run(`JSON.stringify({...STATE.chars[1], id: 'test', name: 'Test Guardian'})`), run('original'));
+    assert.equal(JSON.parse(storage.get('dd_chars'))[1].name, 'New Guardian');
+    run(`
+        STATE.chars[1].stats.strength = 10;
+        STATE.chars[1].weapons[0] = 'Changed';
+        STATE.chars[1].weaponDmg[0].die = 4;
+        STATE.chars[1].weaponBonuses[0].armor = 10;
+        STATE.chars[1].armor.helmetBonuses.cp = 0;
+        STATE.chars[1].selectedAbilities.push('other');
+        STATE.chars[1].specialAbilities.push('another');
+    `);
+    assert.equal(run('JSON.stringify(getActive())'), run('original'));
+    run('STATE.chars = []; load();');
+    assert.equal(run('STATE.chars.length'), 2);
+    assert.equal(run('STATE.chars[1].weaponBonuses[0].armor'), 2);
+    assert.equal(run('STATE.view'), 'home');
+});
+
+test('cloning rejects blank names, invalid forms and a deleted original without creating a copy', () => {
+    const { run, alerts } = setup();
+    run(`
+        const event = {preventDefault() {}, target: {reportValidity: () => true, elements: {namedItem: () => ({value: '   '})}}};
+        cloneChar(event, 'test');
+    `);
+    assert.equal(alerts.length, 1);
+    assert.equal(run('STATE.chars.length'), 1);
+    run("event.target.reportValidity = () => false; cloneChar(event, 'test');");
+    assert.equal(run('STATE.chars.length'), 1);
+    run("openCloneChar('missing'); cloneChar(event, 'missing');");
+    assert.equal(alerts.length, 3);
+    assert.equal(run('STATE.chars.length'), 1);
+});
+
+test('repeated clones get distinct IDs even when their chosen names match', () => {
+    const { run } = setup();
+    run(`
+        const event = {preventDefault() {}, target: {reportValidity: () => true, elements: {namedItem: () => ({value: 'Copy'})}}};
+        cloneChar(event, 'test'); cloneChar(event, 'test');
+    `);
+    assert.equal(run('new Set(STATE.chars.map(ch => ch.id)).size'), 3);
+    assert.equal(run('STATE.chars[1].name'), 'Copy');
+    assert.equal(run('STATE.chars[2].name'), 'Copy');
 });
